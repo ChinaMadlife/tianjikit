@@ -9,7 +9,6 @@
 from __future__ import print_function
 import datetime,sys,os
 import ks,outliers,drop_feature,fill_nan,scale_feature
-import prettytable 
 import numpy as np
 import pandas as pd
 from xgboost.sklearn import XGBClassifier

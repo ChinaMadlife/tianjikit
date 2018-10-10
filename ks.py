@@ -9,7 +9,6 @@
 import numpy as np
 import pandas as pd
 from prettytable import PrettyTable
-from io import StringIO
 
 def ks_analysis(data,label,parts = 10):
 
