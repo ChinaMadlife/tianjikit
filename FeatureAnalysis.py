@@ -72,9 +72,9 @@ class FeatureAnalysis(object):
         try: features.remove('label').remove('loan_dt')
         except: pass
         
-        self.__dftrain = dftrain.apply(pd.to_numeric,errors = 'ignore')
-        self.__dftest = dftest.apply(pd.to_numeric,errors = 'ignore')
-        self.__dfdata = dfdata.apply(pd.to_numeric,errors = 'ignore')
+        self.__dftrain = dftrain
+        self.__dftest = dftest
+        self.__dfdata = dfdata
         self.__features = features
         
     def BasicAnalysis(self):

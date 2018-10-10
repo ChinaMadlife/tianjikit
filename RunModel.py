@@ -21,15 +21,7 @@ from sklearn import preprocessing
 from sklearn import model_selection
 from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
-#from StringIO import StringIO
 
-def _PrettyDataFrame(df):
-    output = 'zz_tempx000x01x002.csv'
-    df.to_csv(output,encoding = 'utf-8')
-    f = open(output,'r')
-    pt = prettytable.from_csv(f)
-    f.close()
-    return(pt)
 
 class RunModel(object):
     """
@@ -224,7 +216,10 @@ class RunModel(object):
         dfcoef = pd.DataFrame(clf.coef_.reshape(-1),columns = ['coef'])
         dfcoef.insert(0,'feature',cols)
         dfcoef['importance'] = np.abs(dfcoef['coef'])
-        dfcoef.sort_values('importance',ascending= False)
+        try:
+            dfcoef = dfcoef.sort_values('importance',ascending= False)
+        except AttributeError as err:
+            dfcoef = dfcoef.sort('importance',ascending= False)  
         dfcoef.to_csv(outputdir + '/feature_importance.csv',sep = '\t',encoding = 'utf-8',index = None)
               
         return clf
@@ -299,7 +294,10 @@ class RunModel(object):
         cols = self.X_train.columns
         dfimportance = pd.DataFrame(clf.feature_importances_.reshape(-1),columns = ['importance'])
         dfimportance.insert(0,'feature',cols)
-        dfimportance.sort_values('importance',ascending= False)
+        try:
+            dfimportance = dfimportance.sort_values('importance',ascending= False)
+        except AttributeError as err:
+            dfimportance = dfimportance.sort('importance',ascending= False)  
         dfimportance.to_csv(outputdir + '/feature_importance.csv',sep = '\t',encoding = 'utf-8',index = None)
               
         return clf
@@ -373,7 +371,10 @@ class RunModel(object):
         cols = self.X_train.columns
         dfimportance = pd.DataFrame(clf.feature_importances_.reshape(-1),columns = ['importance'])
         dfimportance.insert(0,'feature',cols)
-        dfimportance.sort_values('importance',ascending= False)
+        try:
+            dfimportance = dfimportance.sort_values('importance',ascending= False)
+        except AttributeError as err:
+            dfimportance = dfimportance.sort('importance',ascending= False)  
         dfimportance.to_csv(outputdir + '/feature_importance.csv',sep = '\t',encoding = 'utf-8',index = None)
               
         return clf
@@ -517,7 +518,10 @@ class RunModel(object):
         cols = self.X_train.columns
         dfimportance = pd.DataFrame(clf.feature_importances_.reshape(-1),columns = ['importance'])
         dfimportance.insert(0,'feature',cols)
-        dfimportance.sort_values('importance',ascending= False)
+        try:
+            dfimportance = dfimportance.sort_values('importance',ascending= False)
+        except AttributeError as err:
+            dfimportance = dfimportance.sort('importance',ascending= False)  
         dfimportance.to_csv(outputdir + '/feature_importance.csv',sep = '\t',encoding = 'utf-8',index = None)
               
         return clf

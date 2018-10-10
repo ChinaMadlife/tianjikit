@@ -8,15 +8,16 @@
 
 import numpy as np
 import pandas as pd
-import prettytable
-from StringIO import StringIO
+from prettytable import PrettyTable
+from io import StringIO
 
 def ks_analysis(data,label,parts = 10):
 
     df = pd.DataFrame(data,columns = ['feature'])
     df['label'] = label
     df = df.dropna()
-    df = df.sort_values('feature')
+    df.index = df['feature']
+    df = df.sort_index()
     df.index = range(len(df))
 
     indexmax = len(df)-1
@@ -72,26 +73,26 @@ def ks_analysis(data,label,parts = 10):
     for col in ['order_num','overdue_num','normal_num']:
         dfks[col] = dfks[col].astype('i4')
     
-    
     return(dfks)
 
 
 def _PrettyDataFrame(df):
-    output = StringIO()
-    df.to_csv(output,encoding = 'utf-8')
-    output.seek(0)
-    pt = prettytable.from_csv(output)
-    return(pt)
+    table = PrettyTable([''] + list(df.columns))
+    for row in df.itertuples():
+        table.add_row(row)
+    return table
 
 # 打印格式化ks矩阵
 def print_ks(data,label):
     
     dfks = ks_analysis(data,label)
-    cols = [u'评分区间',u'订单数量',u'订单占比',u'逾期数量',u'逾期占比',u'正常数量',
-           u'正常占比',u'累计逾期',u'累计正常',u'ks取值']
-    dfks.columns = [x.encode('utf-8') for x in cols]
+    dfks = dfks.drop(['normal_num','normal_ratio','overdue_cum_ratio','normal_cum_ratio'],axis = 1)
+    #cols = [u'评分区间',u'订单数量',u'订单占比',u'逾期数量',u'逾期占比',u'正常数量',
+           #u'正常占比',u'累计逾期',u'累计正常',u'ks取值']
+    #cols = [u'评分区间',u'订单数量',u'订单占比',u'逾期数量',u'逾期占比',u'ks取值']
+    #dfks.columns = cols
     
-    output = str(_PrettyDataFrame(dfks)) 
+    output = _PrettyDataFrame(dfks)
     print(output)
     return(dfks)
 
