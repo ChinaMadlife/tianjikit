@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from collections import Counter
 from sklearn import feature_selection
+from scipy import stats
 import outliers,iv
 
 def basic_analysis(data,label):

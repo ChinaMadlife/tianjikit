@@ -7,7 +7,7 @@
 #usage: run model
 ##################################################
 from __future__ import print_function
-import datetime,sys,os
+import datetime,sys
 import ks,outliers,drop_feature,fill_nan,scale_feature
 import numpy as np
 import pandas as pd
@@ -44,42 +44,50 @@ class RunModel(object):
     from FeatureAnalysis import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
                      outliers_th=None, fillna_method='most', scale_method= None)
-    lr = model.train_lr(outputdir = './train_lr',cv=5, model_idx=5)
+    lr = model.train_lr(cv=5, model_idx=5)
     model.test(lr)
+    dfimportance = model.dfimportances['lr']
+    
 
     # 训练随机森林模型
     from FeatureAnalysis import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
                      outliers_th=None, fillna_method='most', scale_method= None)
-    rf = model.train_rf(outputdir = './train_randomforest',cv=5, model_idx=5,
+    rf = model.train_rf(cv=5, model_idx=5,
           n_estimators=100, max_depth=10, min_samples_split=2,
           min_samples_leaf=1, min_weight_fraction_leaf=0.0,
           max_features='auto', max_leaf_nodes=None, n_jobs = 4)
     model.test(rf)
+    dfimportance = model.dfimportances['rf']
+    
 
     # 训练GBDT模型
     from FeatureAnalysis import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
                      outliers_th=None, fillna_method='most', scale_method= None)
-    gbdt = model.train_gbdt(outputdir = './train_gbdt',cv=5, model_idx=5,
+    gbdt = model.train_gbdt(cv=5, model_idx=5,
            learning_rate=0.01, n_estimators=1000, max_depth= 3, min_samples_split= 50, 
            min_samples_leaf= 5, subsample=0.7, max_features='sqrt',random_state= 0) 
     model.test(gbdt)
+    dfimportance = model.dfimportances['gbdt']
+    
 
     # 训练XGBOOST模型
     from FeatureAnalysis import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
                      outliers_th=None, fillna_method= None, scale_method= None)
-    xgb = model.train_xgb(outputdir = './train_xgb',learning_rate=0.1,cv=5, model_idx=5,
+    xgb = model.train_xgb(learning_rate=0.1,cv=5, model_idx=5,
           n_estimators=1000, max_depth=5, min_child_weight=1, gamma=0, subsample=0.8,
           colsample_bytree=0.8,scale_pos_weight=1, nthread=4, seed=10) 
     model.test(xgb)
+    dfimportance = model.dfimportances['xgb']
+    
     
     # 训练神经网络模型
     from FeatureAnalysis import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
                  outliers_th=None, fillna_method='most', scale_method= None)
-    nn = model.train_nn(outputdir = './train_nn', cv = 5, model_idx = 5,
+    nn = model.train_nn( cv = 5, model_idx = 5,
          hidden_layer_sizes=(100,20), activation='relu', alpha=0.0001, 
          learning_rate='constant', learning_rate_init=0.001, max_iter=200,tol=0.0001, 
          early_stopping=False, validation_fraction=0.1, warm_start=False, random_state = None)
@@ -147,12 +155,13 @@ class RunModel(object):
         self.X_train,self.y_train = X_train,y_train
         self.X_test,self.y_test  = X_test,y_test
         
+        # 特征重要性
+        self.dfimportances = {} 
         
-    def train_lr(self, outputdir = './train_lr', cv = 5, model_idx = 5):
+        
+    def train_lr(self, cv = 5, model_idx = 5):
         
         print("START TRAIN LR MODEL ...")
-        
-        if not os.path.exists(outputdir):os.makedirs(outputdir)
             
         skf = StratifiedKFold(n_splits = cv,shuffle=True)
         
@@ -207,10 +216,8 @@ class RunModel(object):
         
         clf = models[model_idx]
         
-        # 保存模型
-        joblib.dump(clf,outputdir + '/model.pkl')
         
-        # 保存特征系数和重要性文件
+        # 保存特征系数
         cols = self.X_train.columns
         dfcoef = pd.DataFrame(clf.coef_.reshape(-1),columns = ['coef'])
         dfcoef.insert(0,'feature',cols)
@@ -219,16 +226,14 @@ class RunModel(object):
             dfcoef = dfcoef.sort_values('importance',ascending= False)
         except AttributeError as err:
             dfcoef = dfcoef.sort('importance',ascending= False)  
-        dfcoef.to_csv(outputdir + '/feature_importance.csv',sep = '\t',encoding = 'utf-8',index = None)
+        self.dfimportances['lr'] = dfcoef
               
         return clf
     
-    def train_rf(self, outputdir = './train_rf', cv = 5, model_idx = 5, n_estimators=100, max_depth=10, min_samples_split=2,
+    def train_rf(self, cv = 5, model_idx = 5, n_estimators=100, max_depth=10, min_samples_split=2,
         min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features='auto', max_leaf_nodes=None, n_jobs = 4,random_state = 0):
         
         print("START TRAIN RANDOMFOREST MODEL ...")
-        
-        if not os.path.exists(outputdir):os.makedirs(outputdir)
             
         skf = StratifiedKFold(n_splits = cv,shuffle=True)
         
@@ -286,10 +291,7 @@ class RunModel(object):
         
         clf = models[model_idx]
         
-        # 保存模型
-        joblib.dump(clf,outputdir + '/model.pkl')
-        
-        # 保存特征系数和重要性文件
+        # 计算特征重要性
         cols = self.X_train.columns
         dfimportance = pd.DataFrame(clf.feature_importances_.reshape(-1),columns = ['importance'])
         dfimportance.insert(0,'feature',cols)
@@ -297,16 +299,14 @@ class RunModel(object):
             dfimportance = dfimportance.sort_values('importance',ascending= False)
         except AttributeError as err:
             dfimportance = dfimportance.sort('importance',ascending= False)  
-        dfimportance.to_csv(outputdir + '/feature_importance.csv',sep = '\t',encoding = 'utf-8',index = None)
-              
+        self.dfimportances['rf'] = dfimportance
+        
         return clf
     
-    def train_gbdt(self, outputdir = './train_gbdt', cv = 5, model_idx = 5, learning_rate=0.1, n_estimators=100,
+    def train_gbdt(self, cv = 5, model_idx = 5, learning_rate=0.1, n_estimators=100,
                    max_depth= 3, min_samples_split= 2, min_samples_leaf= 1, subsample=0.85, max_features='sqrt',random_state= 0,**kv):
         
         print("START TRAIN GBDT MODEL ...")
-        
-        if not os.path.exists(outputdir):os.makedirs(outputdir)
             
         skf = StratifiedKFold(n_splits = cv,shuffle=True)
         
@@ -363,10 +363,7 @@ class RunModel(object):
         
         clf = models[model_idx]
         
-        # 保存模型
-        joblib.dump(clf,outputdir + '/model.pkl')
-        
-        # 保存特征系数和重要性文件
+        # 计算特征重要性
         cols = self.X_train.columns
         dfimportance = pd.DataFrame(clf.feature_importances_.reshape(-1),columns = ['importance'])
         dfimportance.insert(0,'feature',cols)
@@ -374,18 +371,17 @@ class RunModel(object):
             dfimportance = dfimportance.sort_values('importance',ascending= False)
         except AttributeError as err:
             dfimportance = dfimportance.sort('importance',ascending= False)  
-        dfimportance.to_csv(outputdir + '/feature_importance.csv',sep = '\t',encoding = 'utf-8',index = None)
-              
+        self.dfimportances['gbdt'] = dfimportance
+        
         return clf
     
-    def train_nn(self, outputdir = './train_nn', cv = 5, model_idx = 5,
+    def train_nn(self, cv = 5, model_idx = 5,
                  hidden_layer_sizes=(100,20), activation='relu', alpha=0.0001, 
                  learning_rate='constant', learning_rate_init=0.001, max_iter=200,tol=0.0001, 
                  early_stopping=False, validation_fraction=0.1, warm_start=False, random_state= 0):
         
         print("START TRAIN NEURAL NETWORK MODEL ...")
-        
-        if not os.path.exists(outputdir):os.makedirs(outputdir)
+       
             
         skf = StratifiedKFold(n_splits = cv,shuffle=True)
         
@@ -443,17 +439,13 @@ class RunModel(object):
         
         clf = models[model_idx]
         
-        # 保存模型
-        joblib.dump(clf,outputdir + '/model.pkl')
         return clf
     
-    def train_xgb(self, outputdir = './train_xgb', cv = 5, model_idx = 5,    
+    def train_xgb(self, cv = 5, model_idx = 5,    
         learning_rate=0.1,n_estimators=1000, max_depth=5, min_child_weight=1,gamma=0,subsample=0.8,
         colsample_bytree=0.8, nthread=4, scale_pos_weight=1, seed=10):
         
         print("START TRAIN XGBOOST MODEL ...")
-        
-        if not os.path.exists(outputdir):os.makedirs(outputdir)
             
         skf = StratifiedKFold(n_splits = cv,shuffle=True)
         
@@ -510,10 +502,7 @@ class RunModel(object):
         
         clf = models[model_idx]
         
-        # 保存模型
-        joblib.dump(clf,outputdir + '/model.pkl')
-        
-        # 保存特征系数和重要性文件
+        # 计算特征重要性
         cols = self.X_train.columns
         dfimportance = pd.DataFrame(clf.feature_importances_.reshape(-1),columns = ['importance'])
         dfimportance.insert(0,'feature',cols)
@@ -521,8 +510,8 @@ class RunModel(object):
             dfimportance = dfimportance.sort_values('importance',ascending= False)
         except AttributeError as err:
             dfimportance = dfimportance.sort('importance',ascending= False)  
-        dfimportance.to_csv(outputdir + '/feature_importance.csv',sep = '\t',encoding = 'utf-8',index = None)
-              
+        self.dfimportances['xgb'] = dfimportance
+        
         return clf
     
     def test(self,clf):
