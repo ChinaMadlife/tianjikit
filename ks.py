@@ -8,7 +8,7 @@
 
 import numpy as np
 import pandas as pd
-from prettytable import PrettyTable
+from pretty_dataframe import pretty_dataframe
 
 def ks_analysis(data,label,parts = 10):
 
@@ -75,11 +75,6 @@ def ks_analysis(data,label,parts = 10):
     return(dfks)
 
 
-def _PrettyDataFrame(df):
-    table = PrettyTable([''] + list(df.columns))
-    for row in df.itertuples():
-        table.add_row(row)
-    return table
 
 # 打印格式化ks矩阵
 def print_ks(data,label):
@@ -91,7 +86,7 @@ def print_ks(data,label):
     #cols = [u'评分区间',u'订单数量',u'订单占比',u'逾期数量',u'逾期占比',u'ks取值']
     #dfks.columns = cols
     
-    output = _PrettyDataFrame(dfks)
+    output = pretty_dataframe(dfks)
     print(output)
     return(dfks)
 
