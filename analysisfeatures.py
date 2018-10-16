@@ -14,14 +14,14 @@ from scipy import stats
 from sklearn import preprocessing
 import basic,ks,chi2,psi,iv
 
-class FeatureAnalysis(object):
+class AnalysisFeatures(object):
     """
     Examples
     --------
     # 多特征分析示范
     import numpy as np
     import pandas as pd
-    from FeatureAnalysis import FeatureAnalysis
+    from tianjikit.analysisfeatures import AnalysisFeatures
 
     # 构造dftrain 训练集特征数据
     dftrain = pd.DataFrame()
@@ -40,22 +40,22 @@ class FeatureAnalysis(object):
     dftest['feature1'] = [1,0,0,1,0,0,1,0,1,0]
     dftest['feature2'] = [10.0,9,8,7,6,5,4,3,2,1]
 
-    FA = FeatureAnalysis(dftrain,dftest)
+    AFS = AnalysisFeatures(dftrain,dftest)
 
     #特征基本分析
-    dfBasic = FA.BasicAnalysis()
+    dfBasic = AFS.BasicAnalysis()
 
     #特征稳定性分析
-    dfPsi = FA.PsiAnalysis()
+    dfPsi = AFS.PsiAnalysis()
 
     #特征ks分析
-    dfKs = FA.KsAnalysis()
+    dfKs = AFS.KsAnalysis()
 
     #特征iv分析
-    dfIv = FA.IvAnalysis()
+    dfIv = AFS.IvAnalysis()
 
     #特征chi2分析
-    dfChi2 = FA.Chi2Analysis()
+    dfChi2 = AFS.Chi2Analysis()
     """
     
     def __init__(self,dftrain,dftest = pd.DataFrame()):

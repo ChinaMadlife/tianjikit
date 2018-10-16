@@ -8,7 +8,7 @@
 
 import numpy as np
 import pandas as pd
-from pretty_dataframe import pretty_dataframe
+from prettydf import pretty_dataframe
 
 def ks_analysis(data,label,parts = 10):
 

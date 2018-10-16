@@ -8,41 +8,41 @@
 
 import basic,ks,chi2,psi,outliers,iv
 
-class feature_analysis(object):
+class AnalysisFeature(object):
     """
     Examples
     --------
     import numpy as np
     import pandas as pd
-    from FeatureAnalysis import feature_analysis
+    from tianjikit.analysisfeature import AnalysisFeature
 
     # 准备数据
     data = [1.0,2,3,4,5,6,4,3,2,1,2,9,10,100,np.nan,0,7,8,10,6]
     label = [0,1,1,0,0,0,0,0,0,1,0,1,0,1,0,0,0,0,1,1]
     assert len(data)==len(label)
 
-    fa = feature_analysis()
+    af = AnalysisFeature()
     # 离群值分析
-    dfoutliers = fa.outliers_analysis(data,alpha = 2)
+    dfoutliers = af.outliers_analysis(data,alpha = 2)
 
     # 去除离群值
-    data_clean = fa.drop_outliers(data,data,alpha = 2)
+    data_clean = af.drop_outliers(data,data,alpha = 2)
 
     # 基本分析
-    dfbasic = fa.basic_analysis(data,label)
+    dfbasic = af.basic_analysis(data,label)
 
     # psi稳定性分析
     test_data = [10,9,5,3,4,3,2,1,6,7,5,np.nan,10,100]
-    dfpsi = fa.psi_analysis(data,test_data)
+    dfpsi = af.psi_analysis(data,test_data)
 
     # ks有效性分析,主要对连续特征，对离散特征也可分析
-    dfks = fa.ks_analysis(data,label)
+    dfks = af.ks_analysis(data,label)
 
     # iv有效性分析，主要针对离散特征，对连续特征也适用
-    dfiv = fa.iv_analysis(data,label)
+    dfiv = af.iv_analysis(data,label)
 
     # 卡方及召回率等分析，主要针对离散特征
-    dfchi2 = fa.chi2_analysis(data,label)
+    dfchi2 = af.chi2_analysis(data,label)
     
     """
     

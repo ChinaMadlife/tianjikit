@@ -8,7 +8,7 @@
 ##################################################
 from __future__ import print_function
 import datetime,sys
-import ks,outliers,drop_feature,fill_nan,scale_feature
+import ks,outliers,dropfeature,fillnan,scalefeature
 import numpy as np
 import pandas as pd
 from xgboost.sklearn import XGBClassifier
@@ -41,7 +41,7 @@ class RunModel(object):
     dftrain.loc[0,['feature0','feature1','feature2']] = np.nan #构造若干缺失值
     
     # 训练逻辑回归模型
-    from FeatureAnalysis import RunModel
+    from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
                      outliers_th=None, fillna_method='most', scale_method= None)
     lr = model.train_lr(cv=5, model_idx=5)
@@ -50,7 +50,7 @@ class RunModel(object):
     
 
     # 训练随机森林模型
-    from FeatureAnalysis import RunModel
+    from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
                      outliers_th=None, fillna_method='most', scale_method= None)
     rf = model.train_rf(cv=5, model_idx=5,
@@ -62,7 +62,7 @@ class RunModel(object):
     
 
     # 训练GBDT模型
-    from FeatureAnalysis import RunModel
+    from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
                      outliers_th=None, fillna_method='most', scale_method= None)
     gbdt = model.train_gbdt(cv=5, model_idx=5,
@@ -73,7 +73,7 @@ class RunModel(object):
     
 
     # 训练XGBOOST模型
-    from FeatureAnalysis import RunModel
+    from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
                      outliers_th=None, fillna_method= None, scale_method= None)
     xgb = model.train_xgb(learning_rate=0.1,cv=5, model_idx=5,
@@ -84,7 +84,7 @@ class RunModel(object):
     
     
     # 训练神经网络模型
-    from FeatureAnalysis import RunModel
+    from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
                  outliers_th=None, fillna_method='most', scale_method= None)
     nn = model.train_nn( cv = 5, model_idx = 5,
@@ -132,23 +132,23 @@ class RunModel(object):
                 X_train[col] = outliers.drop_outliers(X_train[col].values, X_train[col].values, alpha = outliers_th) 
                 if len(dftest): X_test[col] = outliers.drop_outliers(X_train[col].values,X_test[col].values, alpha = outliers_th)  
                     
-        # drop_feature()
-        X_train, X_test = drop_feature.drop_feature(X_train,y_train,X_test,coverage_threshold = coverage_th, 
+        # dropfeature()
+        X_train, X_test = dropfeature.drop_feature(X_train,y_train,X_test,coverage_threshold = coverage_th, 
                           ks_threshold = ks_th, chi2_threshold = chi2_th) 
         
-        print('feature number remain after drop_feature:  {}'.format(X_train.shape[1]))
+        print('feature number remain after dropfeature:  {}'.format(X_train.shape[1]))
         
         
-        # fill_nan()
+        # fillnan()
         if fillna_method:
-            X_train, X_test = fill_nan.fill_nan(X_train,y_train,X_test,method = fillna_method)
+            X_train, X_test = fillnan.fill_nan(X_train,y_train,X_test,method = fillna_method)
         
         print('feature number increased to after fill_na:  {}'.format(X_train.shape[1]))
         print('------------------------------------------------------------------------')
         
-        # scale_feature()
+        # scalefeature()
         if scale_method:
-            X_train, X_test  = scale_feature.scale_feature(X_train,X_test,method = scale_method)
+            X_train, X_test  = scalefeature.scale_feature(X_train,X_test,method = scale_method)
         
         
         # 预处理后的测试和验证集

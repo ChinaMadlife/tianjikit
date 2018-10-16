@@ -85,7 +85,7 @@ class Tunning(object):
     from sklearn.model_selection import train_test_split
     from xgboost.sklearn import XGBClassifier
 
-    from FeatureAnalysis import Tunning
+    from tianjikit.tunning import Tunning
 
     data,label = datasets.make_classification(n_samples= 10000, n_features=20, n_informative= 6 ,
                  n_classes=2, n_clusters_per_class=10,random_state=0)
