@@ -120,7 +120,8 @@ class Tunning(object):
     
     # step0: 初始化
     model = XGBClassifier()
-    tune = Tunning(model = model,dftrain = dftrain,dftest = dftest,params_dict = params_dict)
+    tune = Tunning(model = model,dftrain = dftrain,dftest = dftest,
+           params_dict = params_dict,n_jobs = 4)
     tune.dfscore
     
     # step1: tune n_estimators for relatively high learning_rate (eg: 0.1)
