@@ -42,7 +42,7 @@ params_dict = dict()
 # 以下为待调整参数
 # booster参数
 params_dict['learning_rate'] = 0.1        # 学习率，初始值为 0.1，通常越小越好。
-params_dict['n_estimators'] = 500         # 加法模型树的数量，初始值为50，通常通过模型cv确认。
+params_dict['n_estimators'] = 50         # 加法模型树的数量，初始值为50，通常通过模型cv确认。
 
 # tree参数
 params_dict['max_depth'] = 5              # 树的深度，通常取值在[3,10]之间，初始值常取[3,6]之间
@@ -59,7 +59,7 @@ params_dict['reg_lambda'] = 1             #L2 正则化项的权重系数，越�
 
 # 以下参数通常不需要调整
 params_dict['objective'] = 'binary:logistic'
-params_dict['nthread'] = 4
+params_dict['n_jobs'] = 4
 params_dict['scale_pos_weight'] = 1        #不平衡样本时设定为正值可以使算法更快收敛。
 params_dict['seed'] = 0
 
@@ -114,7 +114,7 @@ class Tunning(object):
 
     # 以下参数通常不需要调整
     params_dict['objective'] = 'binary:logistic'
-    params_dict['nthread'] = 4
+    params_dict['n_jobs'] = 4                 #此 n_jobs为xgboost多线程参数，与GridSearchCV中的n_jobs不同。
     params_dict['scale_pos_weight'] = 1       #不平衡样本时设定为正值可以使算法更快收敛。
     params_dict['seed'] = 0
     
@@ -127,45 +127,45 @@ class Tunning(object):
     param_test1 = { 'learning_rate': 0.1, 'n_estimators':1000}
     tune.params_dict.update(param_test1)
     tune.model.set_params(**tune.params_dict)
-    tune.xgboost_cv(cv_folds= 5, early_stopping_rounds= 100,seed = 0)
+    tune.xgboost_cv(cv= 5, early_stopping_rounds= 100,n_jobs = 4,seed = 0)
     tune.dfscore
     
     # step2：tune max_depth & min_child_weight 
     param_test2 = { 'max_depth': range(3, 10, 2), 'min_child_weight': [1,2,3] } 
-    best_param = tune.gridsearch_cv(param_test2)
+    best_param = tune.gridsearch_cv(param_test2,n_jobs = 4)
     tune.dfscore
     
     # step3：tune gamma
     param_test3 = {'gamma': [i / 10.0 for i in range(0, 5)]}
-    best_param = tune.gridsearch_cv(param_test3)
+    best_param = tune.gridsearch_cv(param_test3,n_jobs = 4)
     tune.dfscore
     
     # step4：tune subsample & colsample_bytree 
     param_test4 = { 'subsample': [i / 10.0 for i in range(6, 10)],
                    'colsample_bytree': [i / 10.0 for i in range(6, 10)] } 
-    best_param = tune.gridsearch_cv(param_test4)
+    best_param = tune.gridsearch_cv(param_test4,n_jobs = 4)
     tune.dfscore
     
     # step5: tune reg_alpha 
     param_test5 = { 'reg_alpha': [1e-5, 1e-2, 0.1, 1, 100, 1000] } 
-    best_param = tune.gridsearch_cv(param_test5)
+    best_param = tune.gridsearch_cv(param_test5,n_jobs = 4)
     tune.dfscore
     
     # step6: tune reg_lambda 
     param_test6 = { 'reg_lambda': [1e-5, 1e-2, 0.1, 1, 100, 1000] }
-    best_param = tune.gridsearch_cv(param_test6)
+    best_param = tune.gridsearch_cv(param_test6,n_jobs = 4)
     tune.dfscore
     
     # step7: lower learning_rate and rise n_estimators
     param_test7 = { 'learning_rate': 0.001, 'n_estimators':2000}
     tune.params_dict.update(param_test7)
     tune.model.set_params(**tune.params_dict)
-    tune.xgboost_cv(cv_folds= 5, early_stopping_rounds= 100)
+    tune.xgboost_cv(cv= 5, early_stopping_rounds= 100,n_jobs = 4)
     tune.dfscore 
     
     """
     
-    def __init__(self, model, dftrain, dftest, params_dict = params_dict):
+    def __init__(self, model, dftrain, dftest, params_dict = params_dict, n_jobs = 4):
         
         self.model = model
         self.dftrain,self.dftest = dftrain,dftest
@@ -193,7 +193,7 @@ class Tunning(object):
         # 计算初始得分
         test_param = {'n_estimators':[self.model.get_params()['n_estimators']]}
         gsearch = GridSearchCV(estimator=self.model, param_grid= test_param, 
-                       scoring= 'roc_auc', n_jobs=4, iid=False, cv=5,
+                       scoring= 'roc_auc', n_jobs= n_jobs, iid=False, cv=5,
                        return_train_score=True) 
         gsearch.fit(self.X_train, np.ravel(self.y_train)) 
         dfcv_results = pd.DataFrame(gsearch.cv_results_)
@@ -208,12 +208,12 @@ class Tunning(object):
         
     
         
-    def xgboost_cv(self, cv_folds=5, early_stopping_rounds= 100, seed=0):
+    def xgboost_cv(self, cv=5, early_stopping_rounds=100, n_jobs=4, seed=0):
         
         xgb_param = self.model.get_xgb_params() 
         xgtrain = xgboost.DMatrix(self.X_train, label= self.y_train) 
         cvresult = xgboost.cv(xgb_param, xgtrain, num_boost_round = self.model.get_params()['n_estimators'],
-                          nfold=cv_folds, metrics='auc', seed=seed, 
+                          nfold=cv, metrics='auc', seed=seed, 
                           callbacks=[ xgboost.callback.print_evaluation(show_stdv=False),
                                      xgboost.callback.early_stop(early_stopping_rounds) ])
         num_round_best = cvresult.shape[0] - 1 
@@ -224,7 +224,7 @@ class Tunning(object):
         self.model = self.model.set_params(**self.params_dict)
         test_param = {'n_estimators':[self.model.get_params()['n_estimators']]}
         gsearch = GridSearchCV(estimator=self.model, param_grid= test_param, 
-                       scoring= 'roc_auc', n_jobs=4, iid=False, cv=5,
+                       scoring= 'roc_auc', n_jobs=n_jobs, iid=False, cv=cv,
                        return_train_score=True) 
         gsearch.fit(self.X_train, np.ravel(self.y_train)) 
         
@@ -240,10 +240,10 @@ class Tunning(object):
         self.dfparams.loc[i,:] = {'model_id':i,'params_dict':self.params_dict.copy()}
         
         
-    def gridsearch_cv(self, test_param, cv=5): 
+    def gridsearch_cv(self, test_param, cv=5, n_jobs=4): 
         
         gsearch = GridSearchCV(estimator = self.model, param_grid=test_param, 
-                               scoring='roc_auc', n_jobs=4, iid=False, cv=cv,
+                               scoring='roc_auc', n_jobs= n_jobs, iid=False, cv=cv,
                                return_train_score=True) 
         gsearch.fit(self.X_train, np.ravel(self.y_train)) 
         dfcv_results = pd.DataFrame(gsearch.cv_results_)
