@@ -78,7 +78,7 @@ class RunModel(object):
                      outliers_th=None, fillna_method= None, scale_method= None)
     xgb = model.train_xgb(learning_rate=0.1,cv=5, model_idx=5,
           n_estimators=1000, max_depth=5, min_child_weight=1, gamma=0, subsample=0.8,
-          colsample_bytree=0.8,scale_pos_weight=1, nthread=4, seed=10) 
+          colsample_bytree=0.8,scale_pos_weight=1, n_jobs=4, seed=10) 
     model.test(xgb)
     dfimportance = model.dfimportances['xgb']
     
@@ -443,7 +443,7 @@ class RunModel(object):
     
     def train_xgb(self, cv = 5, model_idx = 5,    
         learning_rate=0.1,n_estimators=1000, max_depth=5, min_child_weight=1,gamma=0,subsample=0.8,
-        colsample_bytree=0.8, nthread=4, scale_pos_weight=1, seed=10):
+        colsample_bytree=0.8, n_jobs=4, scale_pos_weight=1, seed=10):
         
         print("START TRAIN XGBOOST MODEL ...")
             
@@ -464,7 +464,7 @@ class RunModel(object):
             
             clf = XGBClassifier(learning_rate = learning_rate, n_estimators = n_estimators,max_depth = max_depth,
                   min_child_weight = min_child_weight,gamma = gamma,subsample = subsample,colsample_bytree = colsample_bytree,
-                  nthread = nthread, scale_pos_weight = scale_pos_weight, seed = seed)
+                  n_jobs = n_jobs, scale_pos_weight = scale_pos_weight, seed = seed)
             
             clf.fit(X_train_k,np.ravel(y_train_k))
             predict_train_k = clf.predict_proba(X_train_k)[:,-1]
