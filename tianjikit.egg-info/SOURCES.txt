@@ -1,0 +1,6 @@
+setup.py
+tianjikit.egg-info/PKG-INFO
+tianjikit.egg-info/SOURCES.txt
+tianjikit.egg-info/dependency_links.txt
+tianjikit.egg-info/not-zip-safe
+tianjikit.egg-info/top_level.txt
