@@ -6,7 +6,7 @@
 #usage:输入dftrain,dftest,对全部特征进行basic_analysis、
 #ks_analysis、psi_analysis、chi2_analysis
 ###########################################################
-
+from __future__ import print_function
 import sys,math
 import numpy as np
 import pandas as pd
@@ -91,7 +91,7 @@ class AnalysisFeatures(object):
             dfcol.insert(0,'feature_name',[col])
             dfBasic = pd.concat([dfBasic,dfcol],ignore_index = True)
             if np.mod(i+1,100) == 0 : 
-                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
+                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1),end = '\r')
         print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
         return(dfBasic)
     
@@ -110,7 +110,7 @@ class AnalysisFeatures(object):
             dfcol.insert(0,'feature_name',[col])
             dfPsi = pd.concat([dfPsi,dfcol],ignore_index = True)
             if np.mod(i+1,100) == 0 : 
-                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
+                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1),end = '\r')
         print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
         
         return(dfPsi)
@@ -134,7 +134,7 @@ class AnalysisFeatures(object):
             except:
                 pass
             if np.mod(i+1,100) == 0 : 
-                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
+                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1),end = '\r')
         print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
         
         return(dfKs)
@@ -158,7 +158,7 @@ class AnalysisFeatures(object):
             except:
                 pass
             if np.mod(i+1,100) == 0 : 
-                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
+                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1),end = '\r')
         print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
         
         return(dfIv)
@@ -186,7 +186,7 @@ class AnalysisFeatures(object):
             except:
                 pass
             if np.mod(i+1,100) == 0 : 
-                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
+                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1),end = '\r')
         print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
      
         return(dfChi2)

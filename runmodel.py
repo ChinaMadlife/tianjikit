@@ -118,6 +118,12 @@ class RunModel(object):
                 dftrain = dftrain.drop([col],axis = 1)
                 if len(dftest):dftest = dftest.drop([col],axis = 1)
                     
+        # 制作特征名称映射表，复杂的特征名可能导致xgboost出错
+        self.__feature_dict = {'feature'+ str(i): name for i,name in enumerate(dftrain.columns.drop('label'))}
+        self.__inverse_feature_dict = dict(zip(self.__feature_dict.values(),self.__feature_dict.keys()))
+        dftrain.columns = [self.__inverse_feature_dict.get(x,x) for x in dftrain.columns]
+        dftest.columns = [self.__inverse_feature_dict.get(x,x) for x in dftest.columns]
+                    
         # 分割feature和label
         X_train = dftrain.drop(['label'],axis = 1)
         y_train = dftrain[['label']]
@@ -225,7 +231,8 @@ class RunModel(object):
         try:
             dfcoef = dfcoef.sort_values('importance',ascending= False)
         except AttributeError as err:
-            dfcoef = dfcoef.sort('importance',ascending= False)  
+            dfcoef = dfcoef.sort('importance',ascending= False)
+        dfcoef['feature'] = [self.__feature_dict.get(x,x) for x in dfcoef['feature']]
         self.dfimportances['lr'] = dfcoef
               
         return clf
@@ -298,7 +305,8 @@ class RunModel(object):
         try:
             dfimportance = dfimportance.sort_values('importance',ascending= False)
         except AttributeError as err:
-            dfimportance = dfimportance.sort('importance',ascending= False)  
+            dfimportance = dfimportance.sort('importance',ascending= False)
+        dfimportance['feature'] = [self.__feature_dict.get(x,x) for x in dfimportance['feature']]
         self.dfimportances['rf'] = dfimportance
         
         return clf
@@ -371,6 +379,7 @@ class RunModel(object):
             dfimportance = dfimportance.sort_values('importance',ascending= False)
         except AttributeError as err:
             dfimportance = dfimportance.sort('importance',ascending= False)  
+        dfimportance['feature'] = [self.__feature_dict.get(x,x) for x in dfimportance['feature']]
         self.dfimportances['gbdt'] = dfimportance
         
         return clf
@@ -509,9 +518,9 @@ class RunModel(object):
         try:
             dfimportance = dfimportance.sort_values('importance',ascending= False)
         except AttributeError as err:
-            dfimportance = dfimportance.sort('importance',ascending= False)  
+            dfimportance = dfimportance.sort('importance',ascending= False) 
+        dfimportance['feature'] = [self.__feature_dict.get(x,x) for x in dfimportance['feature']]
         self.dfimportances['xgb'] = dfimportance
-        
         return clf
     
     def test(self,clf):
