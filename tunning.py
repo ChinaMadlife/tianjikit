@@ -184,6 +184,12 @@ class Tunning(object):
             if col in self.dftrain.columns:
                 self.dftrain = self.dftrain.drop([col],axis = 1)
                 self.dftest = self.dftest.drop([col],axis = 1)
+                
+        # 制作特征名称映射表并更改特征名，复杂的特征名可能导致xgboost出错
+        self.__feature_dict = {'feature'+ str(i): name for i,name in enumerate(self.dftrain.columns.drop('label'))}
+        self.__inverse_feature_dict = dict(zip(self.__feature_dict.values(),self.__feature_dict.keys()))
+        self.dftrain.columns = [self.__inverse_feature_dict.get(x,x) for x in self.dftrain.columns]
+        self.dftest.columns = [self.__inverse_feature_dict.get(x,x) for x in self.dftest.columns]
                     
         # 分割feature和label
         self.X_train = self.dftrain.drop(['label'],axis = 1)
