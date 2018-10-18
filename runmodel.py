@@ -43,7 +43,7 @@ class RunModel(object):
     # 训练逻辑回归模型
     from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
-                     outliers_th=None, fillna_method='most', scale_method= None)
+            outliers_th=None, fillna_method='most', scale_method=None,selected_features=None)
     lr = model.train_lr(cv=None, model_idx=5)
     model.test(lr)
     dfimportance = model.dfimportances['lr']
@@ -52,7 +52,7 @@ class RunModel(object):
     # 训练随机森林模型
     from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
-                     outliers_th=None, fillna_method='most', scale_method= None)
+            outliers_th=None, fillna_method='most', scale_method=None,selected_features=None)
     rf = model.train_rf(cv=5, model_idx=5,
           n_estimators=100, max_depth=10, min_samples_split=2,
           min_samples_leaf=1, min_weight_fraction_leaf=0.0,
@@ -64,7 +64,7 @@ class RunModel(object):
     # 训练GBDT模型
     from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
-                     outliers_th=None, fillna_method='most', scale_method= None)
+            outliers_th=None, fillna_method='most', scale_method=None,selected_features=None)
     gbdt = model.train_gbdt(cv=5, model_idx=5,
            learning_rate=0.01, n_estimators=1000, max_depth= 3, min_samples_split= 50, 
            min_samples_leaf= 5, subsample=0.7, max_features='sqrt',random_state= 0) 
@@ -75,7 +75,7 @@ class RunModel(object):
     # 训练XGBOOST模型
     from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
-                     outliers_th=None, fillna_method= None, scale_method= None)
+            outliers_th=None, fillna_method= None, scale_method= None,selected_features=None)
     xgb = model.train_xgb(cv=5, model_idx=5,
           learning_rate=0.1,n_estimators=1000, max_depth=5, min_child_weight=1, gamma=0, 
           subsample=0.8,colsample_bytree=0.8,scale_pos_weight=1, n_jobs=4, seed=10) 
@@ -86,7 +86,7 @@ class RunModel(object):
     # 训练神经网络模型
     from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
-                 outliers_th=None, fillna_method='most', scale_method= None)
+            outliers_th=None, fillna_method='most', scale_method= None, selected_features=None)
     nn = model.train_nn( cv = 5, model_idx = 1,
          hidden_layer_sizes=(100,20), activation='relu', alpha=0.0001, 
          learning_rate='constant', learning_rate_init=0.001, max_iter=200,tol=0.0001, 
@@ -96,7 +96,7 @@ class RunModel(object):
     """
     
     def __init__(self,dftrain,dftest = '',coverage_th = 0.1, ks_th = 0, chi2_th = 0, outliers_th = None,
-                 fillna_method = 'infer',scale_method = 'MinMax'):
+                 fillna_method = 'infer',scale_method = 'MinMax', selected_features = None):
         
         # 输出预处理提示信息
         
@@ -117,7 +117,13 @@ class RunModel(object):
             if col in dftrain.columns:
                 dftrain = dftrain.drop([col],axis = 1)
                 if len(dftest):dftest = dftest.drop([col],axis = 1)
-                    
+        
+        # 如果selected_features 不为空，则进行特征筛选
+        if selected_features:
+            remained_cols = [col for col in dftrain.columns if col in selected_features + ['label']]
+            dftrain = dftrain[remained_cols]
+            if len(dftest):dftest = dftest[remained_cols]
+                
         # 制作特征名称映射表，复杂的特征名可能导致xgboost出错
         self.__feature_dict = {'feature'+ str(i): name for i,name in enumerate(dftrain.columns.drop('label'))}
         self.__inverse_feature_dict = dict(zip(self.__feature_dict.values(),self.__feature_dict.keys()))
