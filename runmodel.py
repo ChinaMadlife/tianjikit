@@ -44,7 +44,7 @@ class RunModel(object):
     from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
                      outliers_th=None, fillna_method='most', scale_method= None)
-    lr = model.train_lr(cv=5, model_idx=5)
+    lr = model.train_lr(cv=None, model_idx=5)
     model.test(lr)
     dfimportance = model.dfimportances['lr']
     
@@ -76,9 +76,9 @@ class RunModel(object):
     from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
                      outliers_th=None, fillna_method= None, scale_method= None)
-    xgb = model.train_xgb(learning_rate=0.1,cv=5, model_idx=5,
-          n_estimators=1000, max_depth=5, min_child_weight=1, gamma=0, subsample=0.8,
-          colsample_bytree=0.8,scale_pos_weight=1, n_jobs=4, seed=10) 
+    xgb = model.train_xgb(cv=5, model_idx=5,
+          learning_rate=0.1,n_estimators=1000, max_depth=5, min_child_weight=1, gamma=0, 
+          subsample=0.8,colsample_bytree=0.8,scale_pos_weight=1, n_jobs=4, seed=10) 
     model.test(xgb)
     dfimportance = model.dfimportances['xgb']
     
@@ -87,7 +87,7 @@ class RunModel(object):
     from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
                  outliers_th=None, fillna_method='most', scale_method= None)
-    nn = model.train_nn( cv = 5, model_idx = 5,
+    nn = model.train_nn( cv = 5, model_idx = 1,
          hidden_layer_sizes=(100,20), activation='relu', alpha=0.0001, 
          learning_rate='constant', learning_rate_init=0.001, max_iter=200,tol=0.0001, 
          early_stopping=False, validation_fraction=0.1, warm_start=False, random_state = None)
@@ -165,63 +165,12 @@ class RunModel(object):
         self.dfimportances = {} 
         
         
-    def train_lr(self, cv = 5, model_idx = 5):
+    def train_lr(self, cv = 5, model_idx = 1):
         
+        lr = linear_model.LogisticRegressionCV()
+ 
         print("START TRAIN LR MODEL ...")
-            
-        skf = StratifiedKFold(n_splits = cv,shuffle=True)
-        
-        k,ks_mean_train,auc_mean_train,ks_mean_validate,auc_mean_validate = 0,0,0,0,0
-        
-        models = {}
-        
-        for train_index,validate_index in skf.split(self.X_train,np.ravel(self.y_train)):
-            
-            k = k + 1
-            nowtime = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-            print('\n{}: k = {}'.format(nowtime,k))
-            
-            X_train_k,y_train_k = self.X_train.iloc[train_index,:],self.y_train.iloc[train_index,:]
-            X_validate_k,y_validate_k = self.X_train.iloc[validate_index,:],self.y_train.iloc[validate_index,:]
-            
-            clf = linear_model.LogisticRegressionCV()
-            
-            clf.fit(X_train_k,np.ravel(y_train_k))
-            predict_train_k = clf.predict_proba(X_train_k)[:,-1]
-            predict_validate_k = clf.predict_proba(X_validate_k)[:,-1]
-            
-            dfks_train = ks.ks_analysis(predict_train_k,y_train_k.values)
-            dfks_validate = ks.ks_analysis(predict_validate_k,y_validate_k.values)
-            
-            ks_train,ks_validate = max(dfks_train['ks_value']),max(dfks_validate['ks_value'])
-            
-            auc_validate = metrics.roc_auc_score(np.ravel(y_validate_k), predict_validate_k)
-            auc_train = metrics.roc_auc_score(np.ravel(y_train_k),predict_train_k)
-            
-            ks_mean_train = ks_mean_train + ks_train
-            auc_mean_train = auc_mean_train + auc_train
-            ks_mean_validate = ks_mean_validate + ks_validate
-            auc_mean_validate = auc_mean_validate + auc_validate
-            
-         
-            print('\ntrain: ks = {} \t auc = {} '.format(ks_train,auc_train))
-            ks.print_ks(predict_train_k,y_train_k.values)
-            print('\nvalidate: ks = {} \t auc = {}'.format(ks_validate,auc_validate))
-            ks.print_ks(predict_validate_k,y_validate_k.values)
-            
-            models[k] = clf
-                
-        ks_mean_train = ks_mean_train/float(k)
-        auc_mean_train = auc_mean_train/float(k)
-        ks_mean_validate = ks_mean_validate/float(k)
-        auc_mean_validate = auc_mean_validate/float(k)
-        
-        print('\n#################################################################################')
-        print('train : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_train, auc_mean_train))
-        print('validate : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_validate, auc_mean_validate)) 
-        
-        clf = models[model_idx]
-        
+        clf = self.train(lr,cv = cv,model_idx = model_idx)  
         
         # 保存特征系数
         cols = self.X_train.columns
@@ -237,67 +186,19 @@ class RunModel(object):
               
         return clf
     
-    def train_rf(self, cv = 5, model_idx = 5, n_estimators=100, max_depth=10, min_samples_split=2,
-        min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features='auto', max_leaf_nodes=None, n_jobs = 4,random_state = 0):
+    def train_rf(self, cv = 5, model_idx = 1,
+        n_estimators=100, max_depth=10, min_samples_split=2,min_samples_leaf=1, min_weight_fraction_leaf=0.0,
+        max_features='auto', max_leaf_nodes=None, n_jobs = 4,random_state = 0):
         
-        print("START TRAIN RANDOMFOREST MODEL ...")
-            
-        skf = StratifiedKFold(n_splits = cv,shuffle=True)
-        
-        k,ks_mean_train,auc_mean_train,ks_mean_validate,auc_mean_validate = 0,0,0,0,0
-        
-        models = {}
-        
-        for train_index,validate_index in skf.split(self.X_train,np.ravel(self.y_train)):
-            
-            k = k + 1
-            nowtime = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-            print('\n{}: k = {}'.format(nowtime,k))
-            
-            X_train_k,y_train_k = self.X_train.iloc[train_index,:],self.y_train.iloc[train_index,:]
-            X_validate_k,y_validate_k = self.X_train.iloc[validate_index,:],self.y_train.iloc[validate_index,:]
-            
-            clf = ensemble.RandomForestClassifier(n_estimators = n_estimators,max_depth = max_depth,
+        rf = ensemble.RandomForestClassifier(n_estimators = n_estimators,max_depth = max_depth,
                   min_samples_split = min_samples_split,min_samples_leaf = min_samples_leaf,
                   min_weight_fraction_leaf = min_weight_fraction_leaf, max_features = max_features,
                   max_leaf_nodes = max_leaf_nodes,n_jobs = n_jobs,random_state = random_state)
-            
-            clf.fit(X_train_k,np.ravel(y_train_k))
-            predict_train_k = clf.predict_proba(X_train_k)[:,-1]
-            predict_validate_k = clf.predict_proba(X_validate_k)[:,-1]
-            
-            dfks_train = ks.ks_analysis(predict_train_k,y_train_k.values)
-            dfks_validate = ks.ks_analysis(predict_validate_k,y_validate_k.values)
-            
-            ks_train,ks_validate = max(dfks_train['ks_value']),max(dfks_validate['ks_value'])
-            
-            auc_validate = metrics.roc_auc_score(np.ravel(y_validate_k), predict_validate_k)
-            auc_train = metrics.roc_auc_score(np.ravel(y_train_k),predict_train_k)
-            
-            ks_mean_train = ks_mean_train + ks_train
-            auc_mean_train = auc_mean_train + auc_train
-            ks_mean_validate = ks_mean_validate + ks_validate
-            auc_mean_validate = auc_mean_validate + auc_validate
-            
-         
-            print('\ntrain: ks = {} \t auc = {} '.format(ks_train,auc_train))
-            ks.print_ks(predict_train_k,y_train_k.values)
-            print('\nvalidate: ks = {} \t auc = {}'.format(ks_validate,auc_validate))
-            ks.print_ks(predict_validate_k,y_validate_k.values)
-            
-            models[k] = clf
-                
-        ks_mean_train = ks_mean_train/float(k)
-        auc_mean_train = auc_mean_train/float(k)
-        ks_mean_validate = ks_mean_validate/float(k)
-        auc_mean_validate = auc_mean_validate/float(k)
         
-        print('\n#################################################################################')
-        print('train : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_train, auc_mean_train))
-        print('validate : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_validate, auc_mean_validate)) 
+        print("START TRAIN RANDOMFOREST MODEL ...")
         
-        clf = models[model_idx]
-        
+        clf = self.train(rf,cv = cv,model_idx = model_idx) 
+            
         # 计算特征重要性
         cols = self.X_train.columns
         dfimportance = pd.DataFrame(clf.feature_importances_.reshape(-1),columns = ['importance'])
@@ -311,65 +212,17 @@ class RunModel(object):
         
         return clf
     
-    def train_gbdt(self, cv = 5, model_idx = 5, learning_rate=0.1, n_estimators=100,
-                   max_depth= 3, min_samples_split= 2, min_samples_leaf= 1, subsample=0.85, max_features='sqrt',random_state= 0,**kv):
+    def train_gbdt(self, cv = 5, model_idx = 1, learning_rate=0.1, n_estimators=100,
+                   max_depth= 3, min_samples_split= 2, min_samples_leaf= 1, 
+                   subsample=0.85, max_features='sqrt',random_state= 0,**kv):
+        
+        gbdt = ensemble.GradientBoostingClassifier(learning_rate = learning_rate, n_estimators = n_estimators,
+              max_depth = max_depth,min_samples_split = min_samples_split,min_samples_leaf = min_samples_leaf,
+              subsample = subsample, max_features = max_features,random_state = random_state,**kv)
         
         print("START TRAIN GBDT MODEL ...")
             
-        skf = StratifiedKFold(n_splits = cv,shuffle=True)
-        
-        k,ks_mean_train,auc_mean_train,ks_mean_validate,auc_mean_validate = 0,0,0,0,0
-        
-        models = {}
-        
-        for train_index,validate_index in skf.split(self.X_train,np.ravel(self.y_train)):
-            
-            k = k + 1
-            nowtime = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-            print('\n{}: k = {}'.format(nowtime,k))
-            
-            X_train_k,y_train_k = self.X_train.iloc[train_index,:],self.y_train.iloc[train_index,:]
-            X_validate_k,y_validate_k = self.X_train.iloc[validate_index,:],self.y_train.iloc[validate_index,:]
-            
-            clf = ensemble.GradientBoostingClassifier(learning_rate = learning_rate, n_estimators = n_estimators,max_depth = max_depth,
-                  min_samples_split = min_samples_split,min_samples_leaf = min_samples_leaf,subsample = subsample, 
-                  max_features = max_features,random_state = random_state,**kv)
-            
-            clf.fit(X_train_k,np.ravel(y_train_k))
-            predict_train_k = clf.predict_proba(X_train_k)[:,-1]
-            predict_validate_k = clf.predict_proba(X_validate_k)[:,-1]
-            
-            dfks_train = ks.ks_analysis(predict_train_k,y_train_k.values)
-            dfks_validate = ks.ks_analysis(predict_validate_k,y_validate_k.values)
-            
-            ks_train,ks_validate = max(dfks_train['ks_value']),max(dfks_validate['ks_value'])
-            
-            auc_validate = metrics.roc_auc_score(np.ravel(y_validate_k), predict_validate_k)
-            auc_train = metrics.roc_auc_score(np.ravel(y_train_k),predict_train_k)
-            
-            ks_mean_train = ks_mean_train + ks_train
-            auc_mean_train = auc_mean_train + auc_train
-            ks_mean_validate = ks_mean_validate + ks_validate
-            auc_mean_validate = auc_mean_validate + auc_validate
-            
-         
-            print('\ntrain: ks = {} \t auc = {} '.format(ks_train,auc_train))
-            ks.print_ks(predict_train_k,y_train_k.values)
-            print('\nvalidate: ks = {} \t auc = {}'.format(ks_validate,auc_validate))
-            ks.print_ks(predict_validate_k,y_validate_k.values)
-            
-            models[k] = clf
-                
-        ks_mean_train = ks_mean_train/float(k)
-        auc_mean_train = auc_mean_train/float(k)
-        ks_mean_validate = ks_mean_validate/float(k)
-        auc_mean_validate = auc_mean_validate/float(k)
-        
-        print('\n#################################################################################')
-        print('train : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_train, auc_mean_train))
-        print('validate : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_validate, auc_mean_validate)) 
-        
-        clf = models[model_idx]
+        clf = self.train(gbdt,cv = cv,model_idx = model_idx) 
         
         # 计算特征重要性
         cols = self.X_train.columns
@@ -384,132 +237,33 @@ class RunModel(object):
         
         return clf
     
-    def train_nn(self, cv = 5, model_idx = 5,
+    def train_nn(self, cv = 5, model_idx = 1,
                  hidden_layer_sizes=(100,20), activation='relu', alpha=0.0001, 
                  learning_rate='constant', learning_rate_init=0.001, max_iter=200,tol=0.0001, 
                  early_stopping=False, validation_fraction=0.1, warm_start=False, random_state= 0):
         
-        print("START TRAIN NEURAL NETWORK MODEL ...")
-       
-            
-        skf = StratifiedKFold(n_splits = cv,shuffle=True)
-        
-        k,ks_mean_train,auc_mean_train,ks_mean_validate,auc_mean_validate = 0,0,0,0,0
-        
-        models = {}
-        
-        for train_index,validate_index in skf.split(self.X_train,np.ravel(self.y_train)):
-            
-            k = k + 1
-            nowtime = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-            print('\n{}: k = {}'.format(nowtime,k))
-            
-            X_train_k,y_train_k = self.X_train.iloc[train_index,:],self.y_train.iloc[train_index,:]
-            X_validate_k,y_validate_k = self.X_train.iloc[validate_index,:],self.y_train.iloc[validate_index,:]
-            
-            clf = MLPClassifier(hidden_layer_sizes=hidden_layer_sizes, activation=activation, alpha=alpha, 
+        nn = MLPClassifier(hidden_layer_sizes=hidden_layer_sizes, activation=activation, alpha=alpha, 
                   learning_rate=learning_rate, learning_rate_init=learning_rate_init, max_iter=max_iter,tol=tol, 
                   early_stopping=early_stopping, validation_fraction=validation_fraction, 
                   warm_start=warm_start, random_state= random_state)
-            
-            clf.fit(X_train_k,np.ravel(y_train_k))
-            predict_train_k = clf.predict_proba(X_train_k)[:,-1]
-            predict_validate_k = clf.predict_proba(X_validate_k)[:,-1]
-            
-            dfks_train = ks.ks_analysis(predict_train_k,y_train_k.values)
-            dfks_validate = ks.ks_analysis(predict_validate_k,y_validate_k.values)
-            
-            ks_train,ks_validate = max(dfks_train['ks_value']),max(dfks_validate['ks_value'])
-            
-            auc_validate = metrics.roc_auc_score(np.ravel(y_validate_k), predict_validate_k)
-            auc_train = metrics.roc_auc_score(np.ravel(y_train_k),predict_train_k)
-            
-            ks_mean_train = ks_mean_train + ks_train
-            auc_mean_train = auc_mean_train + auc_train
-            ks_mean_validate = ks_mean_validate + ks_validate
-            auc_mean_validate = auc_mean_validate + auc_validate
-            
-         
-            print('\ntrain: ks = {} \t auc = {} '.format(ks_train,auc_train))
-            ks.print_ks(predict_train_k,y_train_k.values)
-            print('\nvalidate: ks = {} \t auc = {}'.format(ks_validate,auc_validate))
-            ks.print_ks(predict_validate_k,y_validate_k.values)
-            
-            models[k] = clf
-                
-        ks_mean_train = ks_mean_train/float(k)
-        auc_mean_train = auc_mean_train/float(k)
-        ks_mean_validate = ks_mean_validate/float(k)
-        auc_mean_validate = auc_mean_validate/float(k)
         
-        print('\n#################################################################################')
-        print('train : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_train, auc_mean_train))
-        print('validate : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_validate, auc_mean_validate)) 
+        print("START TRAIN NEURAL NETWORK MODEL ...")
         
-        clf = models[model_idx]
+        clf = self.train(nn,cv = cv,model_idx = model_idx) 
         
         return clf
     
-    def train_xgb(self, cv = 5, model_idx = 5,    
+    def train_xgb(self, cv = 5, model_idx = 1,    
         learning_rate=0.1,n_estimators=1000, max_depth=5, min_child_weight=1,gamma=0,subsample=0.8,
         colsample_bytree=0.8, n_jobs=4, scale_pos_weight=1, seed=10):
         
+        xgb = XGBClassifier(learning_rate = learning_rate, n_estimators = n_estimators,max_depth = max_depth,
+                      min_child_weight = min_child_weight,gamma = gamma,subsample = subsample,colsample_bytree = colsample_bytree,
+                      n_jobs = n_jobs, scale_pos_weight = scale_pos_weight, seed = seed)
+        
         print("START TRAIN XGBOOST MODEL ...")
-            
-        skf = StratifiedKFold(n_splits = cv,shuffle=True)
         
-        k,ks_mean_train,auc_mean_train,ks_mean_validate,auc_mean_validate = 0,0,0,0,0
-        
-        models = {}
-        
-        for train_index,validate_index in skf.split(self.X_train,np.ravel(self.y_train)):
-            
-            k = k + 1
-            nowtime = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-            print('\n{}: k = {}'.format(nowtime,k))
-            
-            X_train_k,y_train_k = self.X_train.iloc[train_index,:],self.y_train.iloc[train_index,:]
-            X_validate_k,y_validate_k = self.X_train.iloc[validate_index,:],self.y_train.iloc[validate_index,:]
-            
-            clf = XGBClassifier(learning_rate = learning_rate, n_estimators = n_estimators,max_depth = max_depth,
-                  min_child_weight = min_child_weight,gamma = gamma,subsample = subsample,colsample_bytree = colsample_bytree,
-                  n_jobs = n_jobs, scale_pos_weight = scale_pos_weight, seed = seed)
-            
-            clf.fit(X_train_k,np.ravel(y_train_k))
-            predict_train_k = clf.predict_proba(X_train_k)[:,-1]
-            predict_validate_k = clf.predict_proba(X_validate_k)[:,-1]
-            
-            dfks_train = ks.ks_analysis(predict_train_k,y_train_k.values)
-            dfks_validate = ks.ks_analysis(predict_validate_k,y_validate_k.values)
-            
-            ks_train,ks_validate = max(dfks_train['ks_value']),max(dfks_validate['ks_value'])
-            
-            auc_validate = metrics.roc_auc_score(np.ravel(y_validate_k), predict_validate_k)
-            auc_train = metrics.roc_auc_score(np.ravel(y_train_k),predict_train_k)
-            
-            ks_mean_train = ks_mean_train + ks_train
-            auc_mean_train = auc_mean_train + auc_train
-            ks_mean_validate = ks_mean_validate + ks_validate
-            auc_mean_validate = auc_mean_validate + auc_validate
-            
-         
-            print('\ntrain: ks = {} \t auc = {} '.format(ks_train,auc_train))
-            ks.print_ks(predict_train_k,y_train_k.values)
-            print('\nvalidate: ks = {} \t auc = {}'.format(ks_validate,auc_validate))
-            ks.print_ks(predict_validate_k,y_validate_k.values)
-            
-            models[k] = clf
-                
-        ks_mean_train = ks_mean_train/float(k)
-        auc_mean_train = auc_mean_train/float(k)
-        ks_mean_validate = ks_mean_validate/float(k)
-        auc_mean_validate = auc_mean_validate/float(k)
-        
-        print('\n#################################################################################')
-        print('train : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_train, auc_mean_train))
-        print('validate : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_validate, auc_mean_validate)) 
-        
-        clf = models[model_idx]
+        clf = self.train(xgb,cv = cv,model_idx = model_idx) 
         
         # 计算特征重要性
         cols = self.X_train.columns
@@ -523,6 +277,75 @@ class RunModel(object):
         self.dfimportances['xgb'] = dfimportance
         return clf
     
+    def train(self,clf,cv = 5,model_idx = 5):
+        
+        if cv:
+            skf = StratifiedKFold(n_splits = cv,shuffle=True)
+
+            k,ks_mean_train,auc_mean_train,ks_mean_validate,auc_mean_validate = 0,0,0,0,0
+
+            models = {}
+
+            for train_index,validate_index in skf.split(self.X_train,np.ravel(self.y_train)):
+
+                k = k + 1
+                nowtime = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+                print('\n{}: k = {}'.format(nowtime,k))
+
+                X_train_k,y_train_k = self.X_train.iloc[train_index,:],self.y_train.iloc[train_index,:]
+                X_validate_k,y_validate_k = self.X_train.iloc[validate_index,:],self.y_train.iloc[validate_index,:]
+                
+                clf.fit(X_train_k,np.ravel(y_train_k))
+                predict_train_k = clf.predict_proba(X_train_k)[:,-1]
+                predict_validate_k = clf.predict_proba(X_validate_k)[:,-1]
+
+                dfks_train = ks.ks_analysis(predict_train_k,y_train_k.values)
+                dfks_validate = ks.ks_analysis(predict_validate_k,y_validate_k.values)
+
+                ks_train,ks_validate = max(dfks_train['ks_value']),max(dfks_validate['ks_value'])
+
+                auc_validate = metrics.roc_auc_score(np.ravel(y_validate_k), predict_validate_k)
+                auc_train = metrics.roc_auc_score(np.ravel(y_train_k),predict_train_k)
+
+                ks_mean_train = ks_mean_train + ks_train
+                auc_mean_train = auc_mean_train + auc_train
+                ks_mean_validate = ks_mean_validate + ks_validate
+                auc_mean_validate = auc_mean_validate + auc_validate
+
+
+                print('\ntrain: ks = {} \t auc = {} '.format(ks_train,auc_train))
+                ks.print_ks(predict_train_k,y_train_k.values)
+                print('\nvalidate: ks = {} \t auc = {}'.format(ks_validate,auc_validate))
+                ks.print_ks(predict_validate_k,y_validate_k.values)
+
+                models[k] = clf
+
+            ks_mean_train = ks_mean_train/float(k)
+            auc_mean_train = auc_mean_train/float(k)
+            ks_mean_validate = ks_mean_validate/float(k)
+            auc_mean_validate = auc_mean_validate/float(k)
+
+            print('\n#################################################################################')
+            print('train : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_train, auc_mean_train))
+            print('validate : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_validate, auc_mean_validate)) 
+
+            clf = models[model_idx]
+            
+        # 处理 cv = 0 或 cv = None时无需交叉验证逻辑
+        else:
+            
+            nowtime = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+            print('\n{}:'.format(nowtime))
+            clf.fit(self.X_train,np.ravel(self.y_train))
+            predict_train = clf.predict_proba(self.X_train)[:,-1]
+            dfks_train = ks.ks_analysis(predict_train,self.y_train.values)
+            ks_train = max(dfks_train['ks_value'])   
+            auc_train = metrics.roc_auc_score(np.ravel(self.y_train),predict_train)
+            print('\ntrain: ks = {} \t auc = {} '.format(ks_train,auc_train))
+            ks.print_ks(predict_train,self.y_train.values)
+            
+        return(clf)
+        
     def test(self,clf):
         
         print("\nSTART TEST MODEL ... \n")
