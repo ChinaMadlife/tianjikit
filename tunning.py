@@ -120,8 +120,8 @@ class Tunning(object):
     
     # step0: 初始化
     model = XGBClassifier()
-    tune = Tunning(model = model,dftrain = dftrain,dftest = dftest,
-           params_dict = params_dict,n_jobs = 4)
+    tune = Tunning(model=model,dftrain=dftrain,dftest=dftest,
+           params_dict=params_dict,n_jobs=4,selected_features=None)
     tune.dfscore
     
     # step1: tune n_estimators for relatively high learning_rate (eg: 0.1)
@@ -166,7 +166,7 @@ class Tunning(object):
     
     """
     
-    def __init__(self, model, dftrain, dftest, params_dict = params_dict, n_jobs = 4):
+    def __init__(self, model, dftrain, dftest, params_dict = params_dict, n_jobs = 4, selected_features = None):
         
         self.model = model
         self.dftrain,self.dftest = dftrain,dftest
@@ -184,6 +184,12 @@ class Tunning(object):
             if col in self.dftrain.columns:
                 self.dftrain = self.dftrain.drop([col],axis = 1)
                 self.dftest = self.dftest.drop([col],axis = 1)
+                
+        # 如果selected_features 不为空，则进行特征筛选
+        if selected_features:
+            remained_cols = [col for col in self.dftrain.columns if col in selected_features + ['label']]
+            self.dftrain = self.dftrain[remained_cols]
+            self.dftest = self.dftest[remained_cols]
                 
         # 制作特征名称映射表并更改特征名，复杂的特征名可能导致xgboost出错
         self.__feature_dict = {'feature'+ str(i): name for i,name in enumerate(self.dftrain.columns.drop('label'))}
