@@ -41,7 +41,7 @@ def ks_scoring(estimater, X, y):
     ks_value = ks(y,preds)
     return ks_value
 
-scoring_dict = {'auc':'auc','ks':ks_scoring}
+scoring_dict = {'auc':'roc_auc','ks':ks_scoring}
 feval_dict = {'auc':None,'ks':ks_feval}
 score_dict = {'auc':roc_auc_score,'ks':ks}
 
@@ -136,7 +136,7 @@ class Tunning(object):
     
     # step0: 初始化
     model = XGBClassifier()
-    tune = Tunning(model=model,dftrain=dftrain,dftest=dftest,cv = 5,
+    tune = Tunning(model=model,dftrain=dftrain,dftest=dftest,cv = 5,score_func = 'ks',
            params_dict=params_dict,n_jobs=4,selected_features=None)
     tune.dfscore
     
@@ -182,9 +182,9 @@ class Tunning(object):
     
     """
     
-    def __init__(self, model, dftrain, dftest, params_dict = params_dict, n_jobs = 4, cv = 5, selected_features = None):
+    def __init__(self, model, dftrain, dftest, params_dict = params_dict, n_jobs = 4, cv = 5, score_func = 'ks',selected_features = None):
         
-        self.model = model
+        self.model,self.__score_func = model,score_func
         self.dftrain,self.dftest = dftrain,dftest
         
         # self.params_dict存储最新的特征
@@ -223,13 +223,13 @@ class Tunning(object):
         # 计算初始得分
         test_param = {'n_estimators':[self.model.get_params()['n_estimators']]}
         gsearch = GridSearchCV(estimator=self.model, param_grid= test_param, 
-                       scoring= ks_scoring, n_jobs= n_jobs, iid=False, cv=cv,
+                       scoring= scoring_dict[self.__score_func], n_jobs= n_jobs, iid=False, cv=cv,
                        return_train_score=True) 
         gsearch.fit(self.X_train, np.ravel(self.y_train)) 
         dfcv_results = pd.DataFrame(gsearch.cv_results_)
         dfcv_simple = dfcv_results[['params','mean_train_score','mean_test_score']]
         train_score,validate_score = dfcv_simple.loc[0,['mean_train_score','mean_test_score']]
-        test_score = ks(np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
+        test_score = score_dict[self.__score_func](np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
         
         # 录入初始得分和初始参数
         self.dfscore.loc[0,:] = {'model_id':0,'train_score':train_score,
@@ -243,7 +243,7 @@ class Tunning(object):
         xgb_param = self.model.get_xgb_params() 
         xgtrain = xgboost.DMatrix(self.X_train, label= self.y_train) 
         cvresult = xgboost.cv(xgb_param, xgtrain, num_boost_round = self.model.get_params()['n_estimators'],
-                          nfold=cv, metrics='auc',feval=ks_feval, seed=seed, 
+                          nfold=cv, metrics='auc',feval= feval_dict[self.__score_func], seed=seed, 
                           callbacks=[ xgboost.callback.print_evaluation(show_stdv=False),
                                      xgboost.callback.early_stop(early_stopping_rounds, maximize = True) ])
         num_round_best = cvresult.shape[0] - 1 
@@ -254,14 +254,14 @@ class Tunning(object):
         self.model = self.model.set_params(**self.params_dict)
         test_param = {'n_estimators':[self.model.get_params()['n_estimators']]}
         gsearch = GridSearchCV(estimator=self.model, param_grid= test_param, 
-                       scoring= ks_scoring, n_jobs=n_jobs, iid=False, cv=cv,
+                       scoring=scoring_dict[self.__score_func], n_jobs=n_jobs, iid=False, cv=cv,
                        return_train_score=True) 
         gsearch.fit(self.X_train, np.ravel(self.y_train)) 
         
         dfcv_results = pd.DataFrame(gsearch.cv_results_)
         dfcv_simple = dfcv_results[['params','mean_train_score','mean_test_score']]
         train_score,validate_score = dfcv_simple.loc[0,['mean_train_score','mean_test_score']]
-        test_score = ks(np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
+        test_score = score_dict[self.__score_func](np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
         
         # 录入得分和参数
         i = len(self.dfscore)
@@ -273,7 +273,7 @@ class Tunning(object):
     def gridsearch_cv(self, test_param, cv=5, n_jobs=4): 
         
         gsearch = GridSearchCV(estimator = self.model, param_grid=test_param, 
-                               scoring = ks_scoring, n_jobs= n_jobs, iid=False, cv=cv,
+                               scoring = scoring_dict[self.__score_func], n_jobs= n_jobs, iid=False, cv=cv,
                                return_train_score=True) 
         gsearch.fit(self.X_train, np.ravel(self.y_train)) 
         dfcv_results = pd.DataFrame(gsearch.cv_results_)
@@ -290,7 +290,7 @@ class Tunning(object):
         self.model = self.model.set_params(**self.params_dict)
         best_id = dfcv_simple['mean_test_score'].idxmax()
         train_score,validate_score = dfcv_simple.loc[best_id,['mean_train_score','mean_test_score']]
-        test_score = ks(np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
+        test_score = score_dict[self.__score_func](np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
         
         # 录入得分和参数
         i = len(self.dfscore)
