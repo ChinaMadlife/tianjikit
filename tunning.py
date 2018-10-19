@@ -21,13 +21,29 @@ from sklearn.model_selection import GridSearchCV
 import xgboost
 from xgboost.sklearn import XGBClassifier
 
-# 定义ks评分指标
-def ks_score(label,feature):
+# 定义ks评分指标,供用户调用
+def ks(label,feature):
     assert len(feature) == len(label)
     df = pd.DataFrame(data = np.array([feature,label]).T,columns = ['feature','label'])
     df_0,df_1 = df[df['label']<0.5],df[df['label']>=0.5]
     ks,ks_pvalue = stats.ks_2samp(df_0['feature'].values,df_1['feature'].values)
     return ks
+
+# 定义ks评分指标,供xgboost.cv函数的feval调用
+def ks_feval(preds,xgbtrain):
+    label = xgbtrain.get_label()
+    ks_value = ks(label,preds)
+    return 'ks',ks_value
+
+# 定义ks评分指标,供GridSearchCV函数的scoring调用
+def ks_scoring(estimater, X, y):
+    preds = estimater.predict_proba(X)[:,1]
+    ks_value = ks(y,preds)
+    return ks_value
+
+scoring_dict = {'auc':'auc','ks':ks_scoring}
+feval_dict = {'auc':None,'ks':ks_feval}
+score_dict = {'auc':roc_auc_score,'ks':ks}
 
 # 美化dataframe输出
 from prettytable import PrettyTable
@@ -120,7 +136,7 @@ class Tunning(object):
     
     # step0: 初始化
     model = XGBClassifier()
-    tune = Tunning(model=model,dftrain=dftrain,dftest=dftest,
+    tune = Tunning(model=model,dftrain=dftrain,dftest=dftest,cv = 5,
            params_dict=params_dict,n_jobs=4,selected_features=None)
     tune.dfscore
     
@@ -166,7 +182,7 @@ class Tunning(object):
     
     """
     
-    def __init__(self, model, dftrain, dftest, params_dict = params_dict, n_jobs = 4, selected_features = None):
+    def __init__(self, model, dftrain, dftest, params_dict = params_dict, n_jobs = 4, cv = 5, selected_features = None):
         
         self.model = model
         self.dftrain,self.dftest = dftrain,dftest
@@ -174,6 +190,7 @@ class Tunning(object):
         # self.params_dict存储最新的特征
         self.params_dict = params_dict 
         self.model.set_params(**params_dict)
+        
         
         # self.dfscore存储全部得分记录，self.dfparams存储全部参数记录
         self.dfscore = pd.DataFrame(columns = ['model_id','train_score','validate_score','test_score'])
@@ -206,13 +223,13 @@ class Tunning(object):
         # 计算初始得分
         test_param = {'n_estimators':[self.model.get_params()['n_estimators']]}
         gsearch = GridSearchCV(estimator=self.model, param_grid= test_param, 
-                       scoring= 'roc_auc', n_jobs= n_jobs, iid=False, cv=5,
+                       scoring= ks_scoring, n_jobs= n_jobs, iid=False, cv=cv,
                        return_train_score=True) 
         gsearch.fit(self.X_train, np.ravel(self.y_train)) 
         dfcv_results = pd.DataFrame(gsearch.cv_results_)
         dfcv_simple = dfcv_results[['params','mean_train_score','mean_test_score']]
         train_score,validate_score = dfcv_simple.loc[0,['mean_train_score','mean_test_score']]
-        test_score = roc_auc_score(np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
+        test_score = ks(np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
         
         # 录入初始得分和初始参数
         self.dfscore.loc[0,:] = {'model_id':0,'train_score':train_score,
@@ -221,14 +238,14 @@ class Tunning(object):
         
     
         
-    def xgboost_cv(self, cv=5, early_stopping_rounds=100, n_jobs=4, seed=0):
+    def xgboost_cv(self, early_stopping_rounds=50, cv = 5, n_jobs=4, seed=0):
         
         xgb_param = self.model.get_xgb_params() 
         xgtrain = xgboost.DMatrix(self.X_train, label= self.y_train) 
         cvresult = xgboost.cv(xgb_param, xgtrain, num_boost_round = self.model.get_params()['n_estimators'],
-                          nfold=cv, metrics='auc', seed=seed, 
+                          nfold=cv, metrics='auc',feval=ks_feval, seed=seed, 
                           callbacks=[ xgboost.callback.print_evaluation(show_stdv=False),
-                                     xgboost.callback.early_stop(early_stopping_rounds) ])
+                                     xgboost.callback.early_stop(early_stopping_rounds, maximize = True) ])
         num_round_best = cvresult.shape[0] - 1 
         print('Best round num: ', num_round_best) 
         self.params_dict.update({'n_estimators':num_round_best})
@@ -237,14 +254,14 @@ class Tunning(object):
         self.model = self.model.set_params(**self.params_dict)
         test_param = {'n_estimators':[self.model.get_params()['n_estimators']]}
         gsearch = GridSearchCV(estimator=self.model, param_grid= test_param, 
-                       scoring= 'roc_auc', n_jobs=n_jobs, iid=False, cv=cv,
+                       scoring= ks_scoring, n_jobs=n_jobs, iid=False, cv=cv,
                        return_train_score=True) 
         gsearch.fit(self.X_train, np.ravel(self.y_train)) 
         
         dfcv_results = pd.DataFrame(gsearch.cv_results_)
         dfcv_simple = dfcv_results[['params','mean_train_score','mean_test_score']]
         train_score,validate_score = dfcv_simple.loc[0,['mean_train_score','mean_test_score']]
-        test_score = roc_auc_score(np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
+        test_score = ks(np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
         
         # 录入得分和参数
         i = len(self.dfscore)
@@ -256,7 +273,7 @@ class Tunning(object):
     def gridsearch_cv(self, test_param, cv=5, n_jobs=4): 
         
         gsearch = GridSearchCV(estimator = self.model, param_grid=test_param, 
-                               scoring='roc_auc', n_jobs= n_jobs, iid=False, cv=cv,
+                               scoring = ks_scoring, n_jobs= n_jobs, iid=False, cv=cv,
                                return_train_score=True) 
         gsearch.fit(self.X_train, np.ravel(self.y_train)) 
         dfcv_results = pd.DataFrame(gsearch.cv_results_)
@@ -273,7 +290,7 @@ class Tunning(object):
         self.model = self.model.set_params(**self.params_dict)
         best_id = dfcv_simple['mean_test_score'].idxmax()
         train_score,validate_score = dfcv_simple.loc[best_id,['mean_train_score','mean_test_score']]
-        test_score = roc_auc_score(np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
+        test_score = ks(np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
         
         # 录入得分和参数
         i = len(self.dfscore)
