@@ -8,15 +8,6 @@ import pandas as pd
 from tianjikit.analysisfeatures import AnalysisFeatures
 from tianjikit.runmodel import RunModel
 
-if __name__ == '__main__':
-    # 确定输入输出位置
-    train_data_path,test_data_path = sys.argv[1],sys.argv[2]
-    if len(sys.argv) >=4:
-        outputdir = sys.argv[3]
-    else:
-        outputdir = './aa_pipeline_reports'
-    main(train_data_path,test_data_path,outputdir)
-
 def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports'):
     
     if not os.path.exists(outputdir):
@@ -59,4 +50,11 @@ def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports'):
     with open(outputdir + '/model_report','w') as f:
         f.write(report_info)
         
-        
+if __name__ == '__main__':
+    # 确定输入输出位置
+    train_data_path,test_data_path = sys.argv[1],sys.argv[2]
+    if len(sys.argv) >=4:
+        outputdir = sys.argv[3]
+    else:
+        outputdir = './aa_pipeline_reports'
+    main(train_data_path,test_data_path,outputdir)        
