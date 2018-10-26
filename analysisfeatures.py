@@ -40,22 +40,22 @@ class AnalysisFeatures(object):
     dftest['feature1'] = [1,0,0,1,0,0,1,0,1,0]
     dftest['feature2'] = [10.0,9,8,7,6,5,4,3,2,1]
 
-    AFS = AnalysisFeatures(dftrain,dftest)
+    afs = AnalysisFeatures(dftrain,dftest)
 
     #特征基本分析
-    dfBasic = AFS.BasicAnalysis()
+    dfbasic = afs.basic_analysises()
 
     #特征稳定性分析
-    dfPsi = AFS.PsiAnalysis()
+    dfpsi = afs.psi_analysises()
 
     #特征ks分析
-    dfKs = AFS.KsAnalysis()
+    dfks = afs.ks_analysises()
 
     #特征iv分析
-    dfIv = AFS.IvAnalysis()
+    dfiv = afs.iv_analysises()
 
     #特征chi2分析
-    dfChi2 = AFS.Chi2Analysis()
+    dfchi2 = afs.chi2_analysises()
     """
     
     def __init__(self,dftrain,dftest = pd.DataFrame()):
@@ -77,51 +77,51 @@ class AnalysisFeatures(object):
         self.__dfdata = dfdata
         self.__features = features
         
-    def BasicAnalysis(self):
+    def basic_analysises(self):
         
         #调用basic_analysis对全部特征进行基本分析
-        print('start BasicAnalysis...')
+        print('start basic_analysises...')
         print('[total|done|todo]')
         
-        dfBasic = pd.DataFrame()
+        dfbasic = pd.DataFrame()
         features_num = len(self.__features)
         for i,col in enumerate(self.__features):
             dfcol = basic.basic_analysis(self.__dfdata[col].values,
                     self.__dfdata['label'].values)
             dfcol.insert(0,'feature_name',[col])
-            dfBasic = pd.concat([dfBasic,dfcol],ignore_index = True)
+            dfbasic = pd.concat([dfbasic,dfcol],ignore_index = True)
             if np.mod(i+1,100) == 0 : 
-                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1),end = '\r')
+                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
         print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
-        return(dfBasic)
+        return(dfbasic)
     
-    def PsiAnalysis(self):
+    def psi_analysises(self):
         
         #调用psi_analysis对全部特征进行稳定性分析
-        print('start PsiAnalysis...')
+        print('start psi_analysises...')
         print('[total|done|todo]')
         
-        dfPsi = pd.DataFrame()
+        dfpsi = pd.DataFrame()
         features_num = len(self.__features)
-        if len(self.__dftest)<1:return(dfPsi.copy())
+        if len(self.__dftest)<1:return(dfpsi.copy())
         for i,col in enumerate(self.__features):
             dfcol = psi.psi_analysis(self.__dftrain[col].values,
                                     self.__dftest[col].values)
             dfcol.insert(0,'feature_name',[col])
-            dfPsi = pd.concat([dfPsi,dfcol],ignore_index = True)
+            dfpsi = pd.concat([dfpsi,dfcol],ignore_index = True)
             if np.mod(i+1,100) == 0 : 
-                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1),end = '\r')
+                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
         print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
         
-        return(dfPsi)
+        return(dfpsi)
     
-    def KsAnalysis(self):
+    def ks_analysises(self):
         
         #调用ks_analysis对全部特征的有效性进行ks分析
-        print('start KsAnalysis...')
+        print('start ks_analysis...')
         print('[total|done|todo]')
         
-        dfKs = pd.DataFrame()
+        dfks = pd.DataFrame()
         features_num = len(self.__features)
         for i,col in enumerate(self.__features):
             try:
@@ -129,23 +129,23 @@ class AnalysisFeatures(object):
                        self.__dfdata['label'].values)
                 ks_value = max(dfcol['ks_value'])
                 dfcol.index = [[col]*len(dfcol),[ks_value]*len(dfcol),range(len(dfcol))]
-                dfKs = pd.concat([dfKs,dfcol])
-                dfKs.index.names = ['feature','ks','seq']
+                dfks = pd.concat([dfks,dfcol])
+                dfks.index.names = ['feature','ks','seq']
             except:
                 pass
             if np.mod(i+1,100) == 0 : 
-                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1),end = '\r')
+                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
         print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
-        
-        return(dfKs)
+        dfks = dfks.sort_index(axis = 0,level = 1,ascending = False)
+        return(dfks)
     
     
-    def IvAnalysis(self):
+    def iv_analysises(self):
         #调用iv_analysis对全部特征的有效性进行ks分析
         print('start IvAnalysis...')
         print('[total|done|todo]')
         
-        dfIv = pd.DataFrame()
+        dfiv = pd.DataFrame()
         features_num = len(self.__features)
         for i,col in enumerate(self.__features):
             try:
@@ -153,24 +153,24 @@ class AnalysisFeatures(object):
                        self.__dfdata['label'].values)
                 iv_value = np.mean(dfcol['iv_value'])
                 dfcol.index = [[col]*len(dfcol),[iv_value]*len(dfcol),range(len(dfcol))]
-                dfIv = pd.concat([dfIv,dfcol])
-                dfIv.index.names = ['feature','iv','seq']
+                dfiv = pd.concat([dfiv,dfcol])
+                dfiv.index.names = ['feature','iv','seq']
             except:
                 pass
             if np.mod(i+1,100) == 0 : 
-                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1),end = '\r')
+                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
         print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
-        
-        return(dfIv)
+        dfiv = dfiv.sort_index(axis = 0,level = 1,ascending = False)
+        return(dfiv)
     
     
-    def Chi2Analysis(self):
+    def chi2_analysises(self):
         
         #调用chi2_analysis对class_num<=5的特征的有效性进行卡方检验
-        print('start Chi2Analysis...')
+        print('start chi2_analysises...')
         print('[total|done|todo]')
         
-        dfChi2 = pd.DataFrame()
+        dfchi2 = pd.DataFrame()
         features_num = len(self.__features)
         
         for i,col in enumerate(self.__features):
@@ -182,11 +182,10 @@ class AnalysisFeatures(object):
             try:
                 dfcol = chi2.chi2_analysis(featuredata,label)
                 dfcol.index = [col]
-                dfChi2 = pd.concat([dfChi2,dfcol])
+                dfchi2 = pd.concat([dfchi2,dfcol])
             except:
                 pass
             if np.mod(i+1,100) == 0 : 
-                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1),end = '\r')
+                print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
         print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
-     
-        return(dfChi2)
+        return(dfchi2)

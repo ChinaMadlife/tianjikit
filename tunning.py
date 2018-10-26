@@ -193,7 +193,8 @@ class Tunning(object):
         
         
         # self.dfscore存储全部得分记录，self.dfparams存储全部参数记录
-        self.dfscore = pd.DataFrame(columns = ['model_id','train_score','validate_score','test_score'])
+        self.dfscore = pd.DataFrame(columns = ['model_id','train_score','validate_score','test_score'] + 
+                     ['learning_rate','n_estimators','max_depth','min_child_weight','gamma','subsample','colsample_bytree','reg_alpha','reg_lambda'])
         self.dfparams = pd.DataFrame(columns = ['model_id','params_dict'])
         
         # 去掉['phone','id','idcard','id_card','loan_dt','name','id_map']等非特征列
@@ -232,8 +233,9 @@ class Tunning(object):
         test_score = score_dict[self.__score_func](np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
         
         # 录入初始得分和初始参数
-        self.dfscore.loc[0,:] = {'model_id':0,'train_score':train_score,
-                                 'validate_score':validate_score,'test_score':test_score}
+        dic_score = {'model_id':0,'train_score':train_score,'validate_score':validate_score,'test_score':test_score}
+        dic_score.update(self.params_dict)
+        self.dfscore.loc[0,:] = dic_score
         self.dfparams.loc[0,:] = {'model_id':0,'params_dict':self.params_dict.copy()}
         
     
@@ -265,8 +267,9 @@ class Tunning(object):
         
         # 录入得分和参数
         i = len(self.dfscore)
-        self.dfscore.loc[i,:] = {'model_id':i,'train_score':train_score,
-                                 'validate_score':validate_score,'test_score':test_score}
+        dic_score = {'model_id':i,'train_score':train_score,'validate_score':validate_score,'test_score':test_score}
+        dic_score.update(self.params_dict)
+        self.dfscore.loc[i,:] = dic_score
         self.dfparams.loc[i,:] = {'model_id':i,'params_dict':self.params_dict.copy()}
         
         
@@ -294,9 +297,9 @@ class Tunning(object):
         
         # 录入得分和参数
         i = len(self.dfscore)
-        
-        self.dfscore.loc[i,:] = {'model_id':i,'train_score':train_score,
-                                 'validate_score':validate_score,'test_score':test_score}
+        dic_score = {'model_id':i,'train_score':train_score,'validate_score':validate_score,'test_score':test_score}
+        dic_score.update(self.params_dict)
+        self.dfscore.loc[i,:] = dic_score
         self.dfparams.loc[i,:] = {'model_id':i,'params_dict':self.params_dict.copy()}
         
         return(gsearch.best_params_)

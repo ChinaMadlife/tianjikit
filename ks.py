@@ -87,7 +87,6 @@ def print_ks(data,label):
     #dfks.columns = cols
     
     output = pretty_dataframe(dfks)
-    print(output)
-    return(dfks)
+    return(output)
 
     

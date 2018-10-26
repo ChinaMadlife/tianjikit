@@ -170,12 +170,18 @@ class RunModel(object):
         # 特征重要性
         self.dfimportances = {} 
         
+        # 报告信息
+        self.report_info = ''
+        
         
     def train_lr(self, cv = 5, model_idx = 1):
         
         lr = linear_model.LogisticRegressionCV()
  
-        print("START TRAIN LR MODEL ...")
+        info = "START TRAIN LR MODEL ..."
+        print(info)
+        self.report_info = self.report_info + info + '\n'
+        
         clf = self.train(lr,cv = cv,model_idx = model_idx)  
         
         # 保存特征系数
@@ -201,8 +207,11 @@ class RunModel(object):
                   min_weight_fraction_leaf = min_weight_fraction_leaf, max_features = max_features,
                   max_leaf_nodes = max_leaf_nodes,n_jobs = n_jobs,random_state = random_state)
         
-        print("START TRAIN RANDOMFOREST MODEL ...")
         
+        info = "START TRAIN RANDOMFOREST MODEL ..."
+        print(info)
+        self.report_info = self.report_info + info + '\n'
+
         clf = self.train(rf,cv = cv,model_idx = model_idx) 
             
         # 计算特征重要性
@@ -226,7 +235,10 @@ class RunModel(object):
               max_depth = max_depth,min_samples_split = min_samples_split,min_samples_leaf = min_samples_leaf,
               subsample = subsample, max_features = max_features,random_state = random_state,**kv)
         
-        print("START TRAIN GBDT MODEL ...")
+        
+        info = "START TRAIN GBDT MODEL ..."
+        print(info)
+        self.report_info = self.report_info + info + '\n'
             
         clf = self.train(gbdt,cv = cv,model_idx = model_idx) 
         
@@ -253,21 +265,25 @@ class RunModel(object):
                   early_stopping=early_stopping, validation_fraction=validation_fraction, 
                   warm_start=warm_start, random_state= random_state)
         
-        print("START TRAIN NEURAL NETWORK MODEL ...")
+        info = "START TRAIN NEURAL NETWORK MODEL ..."
+        print(info)
+        self.report_info = self.report_info + info + '\n'
         
         clf = self.train(nn,cv = cv,model_idx = model_idx) 
         
         return clf
     
     def train_xgb(self, cv = 5, model_idx = 1,    
-        learning_rate=0.1,n_estimators=1000, max_depth=5, min_child_weight=1,gamma=0,subsample=0.8,
-        colsample_bytree=0.8, n_jobs=4, scale_pos_weight=1, seed=10):
+        learning_rate=0.1,n_estimators=50, max_depth=5, min_child_weight=1,gamma=0,subsample=0.8,
+        colsample_bytree=1, n_jobs=-1, scale_pos_weight=1, seed=10):
         
         xgb = XGBClassifier(learning_rate = learning_rate, n_estimators = n_estimators,max_depth = max_depth,
                       min_child_weight = min_child_weight,gamma = gamma,subsample = subsample,colsample_bytree = colsample_bytree,
                       n_jobs = n_jobs, scale_pos_weight = scale_pos_weight, seed = seed)
         
-        print("START TRAIN XGBOOST MODEL ...")
+        info = "START TRAIN XGBOOST MODEL ..."
+        print(info)
+        self.report_info = self.report_info + info + '\n'
         
         clf = self.train(xgb,cv = cv,model_idx = model_idx) 
         
@@ -296,7 +312,9 @@ class RunModel(object):
 
                 k = k + 1
                 nowtime = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-                print('\n{}: k = {}'.format(nowtime,k))
+                info = '\n{}: k = {}'.format(nowtime,k)
+                print(info)
+                self.report_info = self.report_info + info + '\n'
 
                 X_train_k,y_train_k = self.X_train.iloc[train_index,:],self.y_train.iloc[train_index,:]
                 X_validate_k,y_validate_k = self.X_train.iloc[validate_index,:],self.y_train.iloc[validate_index,:]
@@ -318,11 +336,15 @@ class RunModel(object):
                 ks_mean_validate = ks_mean_validate + ks_validate
                 auc_mean_validate = auc_mean_validate + auc_validate
 
-
-                print('\ntrain: ks = {} \t auc = {} '.format(ks_train,auc_train))
-                ks.print_ks(predict_train_k,y_train_k.values)
-                print('\nvalidate: ks = {} \t auc = {}'.format(ks_validate,auc_validate))
-                ks.print_ks(predict_validate_k,y_validate_k.values)
+                info = '\ntrain: ks = {} \t auc = {} '.format(ks_train,auc_train)
+                prettyks = ks.print_ks(predict_train_k,y_train_k.values)
+                info = info + '\n' + str(prettyks) + '\n'
+                info = info + '\nvalidate: ks = {} \t auc = {}'.format(ks_validate,auc_validate) + '\n'
+                prettyks = ks.print_ks(predict_validate_k,y_validate_k.values)
+                info = info + str(prettyks) + '\n'
+                print(info)
+                self.report_info = self.report_info + info
+                
 
                 models[k] = clf
 
@@ -331,9 +353,11 @@ class RunModel(object):
             ks_mean_validate = ks_mean_validate/float(k)
             auc_mean_validate = auc_mean_validate/float(k)
 
-            print('\n#################################################################################')
-            print('train : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_train, auc_mean_train))
-            print('validate : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_validate, auc_mean_validate)) 
+            info = '\n=================================================================================================\n'
+            info = info + 'train : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_train, auc_mean_train) + '\n'
+            info = info + 'validate : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_validate, auc_mean_validate) + '\n'
+            print(info)
+            self.report_info = self.report_info + info
 
             clf = models[model_idx]
             
@@ -341,26 +365,40 @@ class RunModel(object):
         else:
             
             nowtime = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-            print('\n{}:'.format(nowtime))
+            info = '\n{}:'.format(nowtime)
+            print(info)
+            self.report_info = self.report_info + info
+            
             clf.fit(self.X_train,np.ravel(self.y_train))
             predict_train = clf.predict_proba(self.X_train)[:,-1]
             dfks_train = ks.ks_analysis(predict_train,self.y_train.values)
             ks_train = max(dfks_train['ks_value'])   
             auc_train = metrics.roc_auc_score(np.ravel(self.y_train),predict_train)
-            print('\ntrain: ks = {} \t auc = {} '.format(ks_train,auc_train))
-            ks.print_ks(predict_train,self.y_train.values)
+            
+            info = '\ntrain: ks = {} \t auc = {} '.format(ks_train,auc_train) + '\n'
+            prettyks = ks.print_ks(predict_train,self.y_train.values)
+            info = info + prettyks + '\n'
+            print(info)
+            self.report_info = self.report_info + info
             
         return(clf)
         
     def test(self,clf):
         
-        print("\nSTART TEST MODEL ... \n")
+        info = "\nSTART TEST MODEL ... \n"
+        print(info)
+        self.report_info = self.report_info + info + '\n'
+        
         y_test_hat = clf.predict_proba(self.X_test)[:,-1]
         dfks_test = ks.ks_analysis(y_test_hat,np.ravel(self.y_test))
         ks_test = max(dfks_test['ks_value'])
         auc_test = metrics.roc_auc_score(np.ravel(self.y_test),y_test_hat)
-        print('test: ks = {} \t auc = {} '.format(ks_test,auc_test))
-        ks.print_ks(y_test_hat,np.ravel(self.y_test))
+        
+        info = 'test: ks = {} \t auc = {} '.format(ks_test,auc_test) + '\n'
+        prettyks = ks.print_ks(y_test_hat,np.ravel(self.y_test))
+        info = info + str(prettyks) + '\n'
+        print(info)
+        self.report_info = self.report_info + info + '\n'
     
     
                 
