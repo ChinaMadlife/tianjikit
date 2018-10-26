@@ -111,6 +111,7 @@ class AnalysisFeatures(object):
                                     self.__dftest[col].values)
             dfcol.insert(0,'feature_name',[col])
             dfpsi = pd.concat([dfpsi,dfcol],ignore_index = True)
+            #dfpsi = pd.concat([dfpsi,dfcol])
             if np.mod(i+1,100) == 0 : 
                 print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
         print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))

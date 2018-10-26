@@ -1,0 +1,4 @@
+The tianjikit is an useful toolbox for feature engeneering and machine learning in building risk management models. 
+There are four main module in this toolbox: analysisfeature, analysisfeatures, runmodel and tunning.
+More infomation of this package can be seen in the readme.ipynb.
+If there  is any question, you can contact me by email: lyhue1991@163.com
