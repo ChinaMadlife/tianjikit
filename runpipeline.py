@@ -56,7 +56,7 @@ def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports'):
     dfimportance.to_excel(outputdir + '/feature_importance.xlsx',encoding = 'utf-8')
     with open(outputdir +'/xgboost_model.pkl','w') as f:
         pickle.dump(xgb,f)
-    with open(outputdir + '/model_report') as f:
+    with open(outputdir + '/model_report','w') as f:
         f.write(report_info)
         
         
