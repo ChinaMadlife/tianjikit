@@ -99,8 +99,8 @@ class RunModel(object):
                  fillna_method = 'infer',scale_method = 'MinMax', selected_features = None):
         
         # 输出预处理提示信息
-        
-        print('START DATA PREPROCESSING ...\n')
+        print('================================================================================')
+        print('start data preprocessing ...\n')
         print('train set size:  {}'.format(len(dftrain)))
         print('test set size:  {}'.format(len(dftest)))
         print('coverage threshold:  {}'.format(coverage_th))
@@ -109,9 +109,8 @@ class RunModel(object):
         print('chi2 threshold:  {}'.format(chi2_th))
         print('fillna method:  {}'.format(fillna_method))
         print('scale method:  {}'.format(scale_method))
-        print('------------------------------------------------------------------------')
-       
         
+       
         # 去掉['phone','id','idcard','id_card','loan_dt','name','id_map']等非特征列
         for  col in ['name','phone','id','idcard','id_card','loan_dt','id_map']:
             if col in dftrain.columns:
@@ -156,7 +155,7 @@ class RunModel(object):
             X_train, X_test = fillnan.fill_nan(X_train,y_train,X_test,method = fillna_method)
         
         print('feature number increased to after fill_na:  {}'.format(X_train.shape[1]))
-        print('------------------------------------------------------------------------')
+        print('================================================================================')
         
         # scalefeature()
         if scale_method:
@@ -177,8 +176,8 @@ class RunModel(object):
     def train_lr(self, cv = 5, model_idx = 1):
         
         lr = linear_model.LogisticRegressionCV()
- 
-        info = "START TRAIN LR MODEL ..."
+
+        info = "start train logistic model ..."
         print(info)
         self.report_info = self.report_info + info + '\n'
         
@@ -208,7 +207,7 @@ class RunModel(object):
                   max_leaf_nodes = max_leaf_nodes,n_jobs = n_jobs,random_state = random_state)
         
         
-        info = "START TRAIN RANDOMFOREST MODEL ..."
+        info = "start train randomforest model ..."
         print(info)
         self.report_info = self.report_info + info + '\n'
 
@@ -236,7 +235,7 @@ class RunModel(object):
               subsample = subsample, max_features = max_features,random_state = random_state,**kv)
         
         
-        info = "START TRAIN GBDT MODEL ..."
+        info = "start train gbdt model ..."
         print(info)
         self.report_info = self.report_info + info + '\n'
             
@@ -265,7 +264,7 @@ class RunModel(object):
                   early_stopping=early_stopping, validation_fraction=validation_fraction, 
                   warm_start=warm_start, random_state= random_state)
         
-        info = "START TRAIN NEURAL NETWORK MODEL ..."
+        info = "start train neural network model ..."
         print(info)
         self.report_info = self.report_info + info + '\n'
         
@@ -281,7 +280,7 @@ class RunModel(object):
                       min_child_weight = min_child_weight,gamma = gamma,subsample = subsample,colsample_bytree = colsample_bytree,
                       n_jobs = n_jobs, scale_pos_weight = scale_pos_weight, seed = seed)
         
-        info = "START TRAIN XGBOOST MODEL ..."
+        info = "start train xgboost model ..."
         print(info)
         self.report_info = self.report_info + info + '\n'
         
@@ -352,8 +351,8 @@ class RunModel(object):
             auc_mean_train = auc_mean_train/float(k)
             ks_mean_validate = ks_mean_validate/float(k)
             auc_mean_validate = auc_mean_validate/float(k)
-
-            info = '\n=================================================================================================\n'
+            
+            info = '\n================================================================================\n'
             info = info + 'train : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_train, auc_mean_train) + '\n'
             info = info + 'validate : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_validate, auc_mean_validate) + '\n'
             print(info)
@@ -385,7 +384,7 @@ class RunModel(object):
         
     def test(self,clf):
         
-        info = "\nSTART TEST MODEL ... \n"
+        info = "\nstart test model ... \n"
         print(info)
         self.report_info = self.report_info + info + '\n'
         

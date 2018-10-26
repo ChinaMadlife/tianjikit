@@ -80,6 +80,7 @@ class AnalysisFeatures(object):
     def basic_analysises(self):
         
         #调用basic_analysis对全部特征进行基本分析
+        print('================================================================================')
         print('start basic_analysises...')
         print('[total|done|todo]')
         
@@ -98,6 +99,7 @@ class AnalysisFeatures(object):
     def psi_analysises(self):
         
         #调用psi_analysis对全部特征进行稳定性分析
+        print('================================================================================')
         print('start psi_analysises...')
         print('[total|done|todo]')
         
@@ -118,6 +120,7 @@ class AnalysisFeatures(object):
     def ks_analysises(self):
         
         #调用ks_analysis对全部特征的有效性进行ks分析
+        print('================================================================================')
         print('start ks_analysis...')
         print('[total|done|todo]')
         
@@ -142,7 +145,8 @@ class AnalysisFeatures(object):
     
     def iv_analysises(self):
         #调用iv_analysis对全部特征的有效性进行ks分析
-        print('start IvAnalysis...')
+        print('================================================================================')
+        print('start iv_analysises...')
         print('[total|done|todo]')
         
         dfiv = pd.DataFrame()
@@ -167,6 +171,7 @@ class AnalysisFeatures(object):
     def chi2_analysises(self):
         
         #调用chi2_analysis对class_num<=5的特征的有效性进行卡方检验
+        print('================================================================================')
         print('start chi2_analysises...')
         print('[total|done|todo]')
         
