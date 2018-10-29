@@ -1,0 +1,13 @@
+MANIFEST.in
+README
+setup.py
+./aagit.ipynb
+./readme.ipynb
+./readme.png
+./.ipynb_checkpoints/aagit-checkpoint.ipynb
+tianjikit.egg-info/PKG-INFO
+tianjikit.egg-info/SOURCES.txt
+tianjikit.egg-info/dependency_links.txt
+tianjikit.egg-info/not-zip-safe
+tianjikit.egg-info/requires.txt
+tianjikit.egg-info/top_level.txt
