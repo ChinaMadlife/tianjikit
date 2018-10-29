@@ -22,7 +22,6 @@ def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports'):
     # 基本分析
     afs = AnalysisFeatures(dftrain,dftest)
     dfbasic = afs.basic_analysises()
-    dfbasic = dfbasic.drop([u't(for mean)', u't_pvalue',u'z(for coverage)', u'z_pvalue'],axis = 1)
 
     # ks有效性分析
     dfks = afs.ks_analysises()
