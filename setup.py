@@ -2,7 +2,7 @@
 from setuptools import setup,find_packages
 
 setup(name='tianjikit', 
-      version='1.0', 
+      version='2.0', 
       packages=find_packages(),
       include_package_data=True,   # 启用清单文件MANIFEST.in
       exclude_package_data={'':['.gitignore','.git']}, #排除文件列表      
