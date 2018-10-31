@@ -2,13 +2,25 @@
 #!/usr/bin/python
 
 from __future__ import print_function
-import sys,os,pickle
+import sys,os,pickle,json
 import numpy as np
 import pandas as pd
 from tianjikit.analysisfeatures import AnalysisFeatures
 from tianjikit.runmodel import RunModel
 
-def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports'):
+params_dict = {
+    'learning_rate':0.1,
+    'n_estimators':50,
+    'max_depth':3,
+    'min_child_weight':10,
+    'gamma':0,
+    'subsample':0.8,
+    'colsample_bytree':0.9,
+    'reg_alpha':0,
+    'reg_lambda':1
+   }
+
+def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports',params_dict = params_dict):
     
     if not os.path.exists(outputdir):
         os.makedirs(outputdir)
@@ -32,9 +44,7 @@ def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports'):
     # 训练XGBOOST模型
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
             outliers_th=None, fillna_method= None, scale_method= None,selected_features=None)
-    xgb = model.train_xgb(cv=5, model_idx=5,
-          learning_rate=0.1,n_estimators=50, max_depth=3, min_child_weight=10, gamma=0, 
-          subsample=0.8,colsample_bytree=0.9,scale_pos_weight=1, n_jobs=-1, seed=10) 
+    xgb = model.train_xgb(cv=5, model_idx=5,scale_pos_weight=1, n_jobs=-1, seed=10,**params_dict) 
     model.test(xgb)
     dfimportance = model.dfimportances['xgb']
     report_info = model.report_info
@@ -56,4 +66,7 @@ if __name__ == '__main__':
         outputdir = sys.argv[3]
     else:
         outputdir = './aa_pipeline_reports'
-    main(train_data_path,test_data_path,outputdir)        
+    if len(sys.argv) >=5:
+        params_json = sys.argv[4]
+        params_dict = json.load(params_json)
+    main(train_data_path,test_data_path,outputdir,params_dict = params_dict)        

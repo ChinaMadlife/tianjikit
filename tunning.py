@@ -10,6 +10,7 @@ from __future__ import print_function
 import numpy as np
 import pandas as pd
 from scipy import stats
+from copy import deepcopy
 
 from sklearn import datasets
 from sklearn import metrics
@@ -20,8 +21,8 @@ from sklearn.model_selection import GridSearchCV
 import xgboost
 from xgboost.sklearn import XGBClassifier
 
-import pdb
-__DEBUG__ = False
+#import pdb
+#__DEBUG__ = False
 
 # 定义ks评分指标,供用户调用
 def ks(label,feature):
@@ -82,15 +83,6 @@ params_dict['scale_pos_weight'] = 1        #不平衡样本时设定为正值可
 params_dict['seed'] = 0
 
 
-# 定义默认初始化数据
-
-#_model = XGBClassifier()
-#_data,_label = datasets.make_classification(n_samples= 10000, n_features=20, n_informative= 6 ,
-             #n_classes=2, n_clusters_per_class=10,random_state=0)
-#_dfdata = pd.DataFrame(_data,columns = [u'f'+str(i) for i in range(_data.shape[1])])
-#_dfdata['label'] = _label
-#_dftrain,_dftest = train_test_split(_dfdata)
-
 class Tunning(object):
     """  
     Examples:
@@ -150,36 +142,36 @@ class Tunning(object):
     tune.dfscore
     
     # step2：tune max_depth & min_child_weight 
-    param_test2 = { 'max_depth': range(3, 10, 2), 'min_child_weight': [1,10,20,30,40,50] } 
-    best_param = tune.gridsearch_cv(param_test2,n_jobs = 4)
+    param_test2 = { 'max_depth': [3,4,5,6,7], 'min_child_weight': [1,10,20,30,40,50] } 
+    best_param = tune.gridsearch_cv(param_test2,n_jobs = -1)
     tune.dfscore
     
     # step3：tune gamma
-    param_test3 = {'gamma': [i / 10.0 for i in range(0, 5)]}
-    best_param = tune.gridsearch_cv(param_test3,n_jobs = 4)
+    param_test3 = {'gamma': [0,0.1,0.2,0.3,0.4,0.5]]}
+    best_param = tune.gridsearch_cv(param_test3,n_jobs = -1)
     tune.dfscore
     
     # step4：tune subsample & colsample_bytree 
-    param_test4 = { 'subsample': [i / 10.0 for i in range(6, 10)],
-                   'colsample_bytree': [i / 10.0 for i in range(6, 10)] } 
-    best_param = tune.gridsearch_cv(param_test4,n_jobs = 4)
+    param_test4 = { 'subsample': [0.6,0.7,0.8,0.9,1],
+                   'colsample_bytree': [0.6,0.7,0.8,0.9,1] } 
+    best_param = tune.gridsearch_cv(param_test4,n_jobs = -1)
     tune.dfscore
     
     # step5: tune reg_alpha 
-    param_test5 = { 'reg_alpha': [1e-5, 1e-2, 0.1, 1, 100, 1000] } 
-    best_param = tune.gridsearch_cv(param_test5,n_jobs = 4)
+    param_test5 = { 'reg_alpha': [0, 0.01, 0.1, 1, 10, 100] } 
+    best_param = tune.gridsearch_cv(param_test5,n_jobs = -1)
     tune.dfscore
     
     # step6: tune reg_lambda 
-    param_test6 = { 'reg_lambda': [1e-5, 1e-2, 0.1, 1, 100, 1000] }
-    best_param = tune.gridsearch_cv(param_test6,n_jobs = 4)
+    param_test6 = { 'reg_lambda': [0, 0.01, 0.1, 1, 10, 100] }
+    best_param = tune.gridsearch_cv(param_test6,n_jobs = -1)
     tune.dfscore
     
     # step7: lower learning_rate and rise n_estimators
-    param_test7 = { 'learning_rate': 0.001, 'n_estimators':2000}
+    param_test7 = { 'learning_rate': 0.01, 'n_estimators':1000}
     tune.params_dict.update(param_test7)
     tune.model.set_params(**tune.params_dict)
-    tune.xgboost_cv(cv= 5, early_stopping_rounds= 100,n_jobs = 4)
+    tune.xgboost_cv(cv= 5, early_stopping_rounds= 100,n_jobs = -1)
     tune.dfscore 
     
     """
@@ -191,7 +183,7 @@ class Tunning(object):
         self.dftrain,self.dftest = dftrain,dftest
         
         # self.params_dict存储最新的特征
-        self.params_dict = params_dict 
+        self.params_dict = params_dict.copy()
         self.model.set_params(**params_dict)
         
         
@@ -241,8 +233,9 @@ class Tunning(object):
         dic_score = {'model_id':0,'train_score':train_score,
                      'score_gap':score_gap,'validate_score':validate_score,'test_score':test_score}
         dic_score.update(self.params_dict)
-        self.dfscore.loc[0,:] = dic_score
-        self.dfparams.loc[0,:] = {'model_id':0,'params_dict':self.params_dict.copy()}
+        i = len(self.dfscore)
+        self.dfscore.loc[i,:] = deepcopy(dic_score)
+        self.dfparams.loc[i] = {'model_id':i,'params_dict':self.params_dict.copy()}
         
     def xgboost_cv(self, early_stopping_rounds=50, cv = 5, n_jobs=4, seed=0):
         
@@ -260,8 +253,8 @@ class Tunning(object):
         
         if len(cvresult_filter)<1:
             cvresult_filter = pd.DataFrame(cvresult.loc[cvresult['score_gap'].idxmin(),:]).T
-        num_round_best = cvresult_filter['test-{}-mean'.format(self.__score_func)].idxmax()
-        print('Best round num: ', num_round_best) 
+        num_round_best = cvresult_filter['test-{}-mean'.format(self.__score_func)].astype('f4').idxmax()
+        print('Best n_estimators considered score_gap_limit: ', num_round_best) 
         self.params_dict.update({'n_estimators':num_round_best})
         
         # 计算更新n_estimators后的得分
@@ -278,15 +271,17 @@ class Tunning(object):
         score_gap = train_score - validate_score
         test_score = score_dict[self.__score_func](np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
         
-        if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
+        #if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
         
         # 录入得分和参数
         i = len(self.dfscore)
         dic_score = {'model_id':i,'train_score':train_score,'validate_score':validate_score,
                      'score_gap':score_gap,'test_score':test_score}
         dic_score.update(self.params_dict)
-        self.dfscore.loc[i,:] = dic_score
-        self.dfparams.loc[i,:] = {'model_id':i,'params_dict':self.params_dict.copy()}
+        self.dfscore.loc[i,:] = deepcopy(dic_score)
+        self.dfparams.loc[i] = {'model_id':i,'params_dict':self.params_dict.copy()}
+        
+        return(num_round_best)
         
         
     def gridsearch_cv(self, test_param, cv=5, n_jobs=4): 
@@ -303,15 +298,15 @@ class Tunning(object):
         dfcv_simple_filter = dfcv_simple.query('score_gap < {}'.format(self.score_gap_limit)).copy()
         if len(dfcv_simple_filter)<1:
             dfcv_simple_filter = pd.DataFrame(dfcv_simple.loc[dfcv_simple['score_gap'].idxmin(),:]).T
-        best_id = dfcv_simple_filter['mean_test_score'].idxmax()
-        best_params = dfcv_simple.loc[best_id,'params']
+        best_id = dfcv_simple_filter['mean_test_score'].astype('f4').idxmax()
+        best_params = dfcv_simple.loc[best_id,'params'].copy()
         best_score = dfcv_simple.loc[best_id,'mean_test_score']
         
-        print('CV Results: ')
+        print('CV results: ')
         print(pretty_dataframe(dfcv_simple))
-        print('Best Params: ')
+        print('Best params this step: ')
         print(best_params) 
-        print('Best Score: ')
+        print('Best score this step: ')
         print(best_score) 
         
         # 计算更新参数后的得分
@@ -320,17 +315,17 @@ class Tunning(object):
         train_score,validate_score,score_gap = dfcv_simple.loc[best_id,['mean_train_score','mean_test_score','score_gap']]
         test_score = score_dict[self.__score_func](np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
         
-        if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
+        #if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
         
         # 录入得分和参数
         i = len(self.dfscore)
         dic_score = {'model_id':i,'train_score':train_score,'validate_score':validate_score,
                      'score_gap':score_gap,'test_score':test_score}
         dic_score.update(self.params_dict)
-        self.dfscore.loc[i,:] = dic_score
-        self.dfparams.loc[i,:] = {'model_id':i,'params_dict':self.params_dict.copy()}
+        self.dfscore.loc[i,:] = deepcopy(dic_score)
+        self.dfparams.loc[i] = {'model_id':i,'params_dict':self.params_dict.copy()}
         
-        return(gsearch.best_params_)
+        return(best_params)
         
         
         
