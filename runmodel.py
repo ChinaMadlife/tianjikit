@@ -112,7 +112,7 @@ class RunModel(object):
         
        
         # 去掉['phone','id','idcard','id_card','loan_dt','name','id_map']等非特征列
-        for  col in ['name','phone','id','idcard','id_card','loan_dt','id_map']:
+        for  col in ['name','phone','id','idcard','id_card','id-card','loan_dt','id_map','idmap','id-map']:
             if col in dftrain.columns:
                 dftrain = dftrain.drop([col],axis = 1)
                 if len(dftest):dftest = dftest.drop([col],axis = 1)

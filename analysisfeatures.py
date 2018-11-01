@@ -66,7 +66,7 @@ class AnalysisFeatures(object):
                  if len(dftest)> 0 else dftrain
         
         # 移除非特征列
-        for col in ['phone','id_card','name','loan_dt']: 
+        for col in ['phone','id','idcard','id-card','id_card','name','loan_dt','idmap','id_map','id-map']: 
             if col in dfdata.columns:dfdata.drop(columns = col,inplace = True)
         features = list(dfdata.columns.values)
         try: features.remove('label').remove('loan_dt')

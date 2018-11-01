@@ -194,7 +194,7 @@ class Tunning(object):
         self.dfparams = pd.DataFrame(columns = ['model_id','params_dict'])
         
         # 去掉['phone','id','idcard','id_card','loan_dt','name','id_map']等非特征列
-        for  col in ['name','phone','id','idcard','id_card','loan_dt','id_map']:
+        for  col in ['name','phone','id','id-card','idcard','id_card','loan_dt','id_map','idmap','id-map']:
             if col in self.dftrain.columns:
                 self.dftrain = self.dftrain.drop([col],axis = 1)
                 self.dftest = self.dftest.drop([col],axis = 1)
