@@ -28,8 +28,8 @@ def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports',para
     # 获取数据
     print('================================================================================')
     print('start reading data...\n')
-    dftrain = pd.read_csv(train_data_path,sep = '\t',encoding = 'utf-8',index_col=0)
-    dftest = pd.read_csv(test_data_path,sep = '\t',encoding = 'utf-8',index_col=0)
+    dftrain = pd.read_csv(train_data_path,sep = '\t',encoding = 'utf-8')
+    dftest = pd.read_csv(test_data_path,sep = '\t',encoding = 'utf-8')
 
     # 基本分析
     afs = AnalysisFeatures(dftrain,dftest)
