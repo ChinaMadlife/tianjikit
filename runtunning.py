@@ -94,8 +94,8 @@ def main(train_data_path,test_data_path,outputdir = './aa_tunning_results'):
     # 获取数据
     print('\n================================================================================\n')
     print('start reading data...')
-    dftrain = pd.read_csv(train_data_path,sep = '\t',encoding = 'utf-8',index_col=0)
-    dftest = pd.read_csv(test_data_path,sep = '\t',encoding = 'utf-8',index_col=0)
+    dftrain = pd.read_csv(train_data_path,sep = '\t',encoding = 'utf-8')
+    dftest = pd.read_csv(test_data_path,sep = '\t',encoding = 'utf-8')
     
     print('\n================================================================================\n')
     
