@@ -26,19 +26,22 @@ def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports',para
         os.makedirs(outputdir)
 
     # 获取数据
-    print('================================================================================')
-    print('start reading data...\n')
+    print('\n================================================================================\n')
+    print('start reading data...')
     dftrain = pd.read_csv(train_data_path,sep = '\t',encoding = 'utf-8')
     dftest = pd.read_csv(test_data_path,sep = '\t',encoding = 'utf-8')
 
     # 基本分析
     afs = AnalysisFeatures(dftrain,dftest)
+    print('\n================================================================================\n')
     dfbasic = afs.basic_analysises()
 
     # ks有效性分析
+    print('\n================================================================================\n')
     dfks = afs.ks_analysises()
     
     # 稳定性分析
+    print('\n================================================================================\n')
     dfpsi = afs.psi_analysises()
 
     # 训练XGBOOST模型

@@ -99,7 +99,7 @@ class RunModel(object):
                  fillna_method = 'infer',scale_method = 'MinMax', selected_features = None):
         
         # 输出预处理提示信息
-        print('================================================================================')
+        print('\n================================================================================\n')
         print('start data preprocessing ...\n')
         print('train set size:  {}'.format(len(dftrain)))
         print('test set size:  {}'.format(len(dftest)))
@@ -155,7 +155,7 @@ class RunModel(object):
             X_train, X_test = fillnan.fill_nan(X_train,y_train,X_test,method = fillna_method)
         
         print('feature number increased to after fill_na:  {}'.format(X_train.shape[1]))
-        print('================================================================================')
+        print('\n================================================================================\n')
         
         # scalefeature()
         if scale_method:
