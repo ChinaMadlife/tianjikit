@@ -2,7 +2,7 @@
 #!/usr/bin/python
 
 from __future__ import print_function
-import sys,os,pickle,json
+import sys,os,pickle,json,datetime
 import numpy as np
 import pandas as pd
 from tianjikit.analysisfeatures import AnalysisFeatures
@@ -26,22 +26,26 @@ def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports',para
         os.makedirs(outputdir)
 
     # 获取数据
-    print('\n================================================================================\n')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
     print('start reading data...')
     dftrain = pd.read_csv(train_data_path,sep = '\t',encoding = 'utf-8')
     dftest = pd.read_csv(test_data_path,sep = '\t',encoding = 'utf-8')
 
     # 基本分析
     afs = AnalysisFeatures(dftrain,dftest)
-    print('\n================================================================================\n')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
     dfbasic = afs.basic_analysises()
 
     # ks有效性分析
-    print('\n================================================================================\n')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
     dfks = afs.ks_analysises()
     
     # 稳定性分析
-    print('\n================================================================================\n')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
     dfpsi = afs.psi_analysises()
 
     # 训练XGBOOST模型

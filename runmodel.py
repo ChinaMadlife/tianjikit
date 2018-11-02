@@ -99,7 +99,8 @@ class RunModel(object):
                  fillna_method = 'infer',scale_method = 'MinMax', selected_features = None):
         
         # 输出预处理提示信息
-        print('\n================================================================================\n')
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
         print('start data preprocessing ...\n')
         print('train set size:  {}'.format(len(dftrain)))
         print('test set size:  {}'.format(len(dftest)))
@@ -155,7 +156,8 @@ class RunModel(object):
             X_train, X_test = fillnan.fill_nan(X_train,y_train,X_test,method = fillna_method)
         
         print('feature number increased to after fill_na:  {}'.format(X_train.shape[1]))
-        print('\n================================================================================\n')
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
         
         # scalefeature()
         if scale_method:
@@ -310,7 +312,7 @@ class RunModel(object):
             for train_index,validate_index in skf.split(self.X_train,np.ravel(self.y_train)):
 
                 k = k + 1
-                nowtime = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+                nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 info = '\n{}: k = {}'.format(nowtime,k)
                 print(info)
                 self.report_info = self.report_info + info + '\n'
@@ -352,7 +354,8 @@ class RunModel(object):
             ks_mean_validate = ks_mean_validate/float(k)
             auc_mean_validate = auc_mean_validate/float(k)
             
-            info = '\n================================================================================\n'
+            nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            info = '\n================================================================================ %s\n'%nowtime
             info = info + 'train : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_train, auc_mean_train) + '\n'
             info = info + 'validate : ks mean {:.5f} ; auc mean {:.5f}'.format(ks_mean_validate, auc_mean_validate) + '\n'
             print(info)
@@ -363,8 +366,8 @@ class RunModel(object):
         # 处理 cv = 0 或 cv = None时无需交叉验证逻辑
         else:
             
-            nowtime = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-            info = '\n{}:'.format(nowtime)
+            nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            info = '\n================================================================================ %s\n'%nowtime
             print(info)
             self.report_info = self.report_info + info
             

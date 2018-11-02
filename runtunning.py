@@ -59,15 +59,15 @@ param_test7 = {'learning_rate':[0.05,0.01]} #此处应配置较小learning_rate
 #================================================================================
 #Don't change the code below!!! 以下代码请勿轻易改动。
 #================================================================================
-import sys,os,json
+import sys,os,json,datetime
 import numpy as np
 import pandas as pd
 import xgboost
 from xgboost.sklearn import XGBClassifier
 from tianjikit.tunning import Tunning
 from copy import deepcopy
-import pdb
-__DEBUG__ = False
+#import pdb
+#__DEBUG__ = False
 
 # 美化dataframe输出
 from prettytable import PrettyTable
@@ -92,12 +92,14 @@ def main(train_data_path,test_data_path,outputdir = './aa_tunning_results'):
     params_list = ['learning_rate','n_estimators','max_depth','min_child_weight','gamma','subsample',
                   'colsample_bytree','reg_alpha','reg_lambda']
     # 获取数据
-    print('\n================================================================================\n')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
     print('start reading data...')
     dftrain = pd.read_csv(train_data_path,sep = '\t',encoding = 'utf-8')
     dftest = pd.read_csv(test_data_path,sep = '\t',encoding = 'utf-8')
     
-    print('\n================================================================================\n')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
     
     # step 0
     print('step0: evaluate init params score...')
@@ -114,7 +116,8 @@ def main(train_data_path,test_data_path,outputdir = './aa_tunning_results'):
     print('init params values:')
     print(pretty_dataframe(dfpa_list))
 
-    print('\n================================================================================\n')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
 
     # step 1
     print('step1: tune n_estimators for relatively high learning_rate...')
@@ -140,9 +143,10 @@ def main(train_data_path,test_data_path,outputdir = './aa_tunning_results'):
     #dfpa_list.columns = ['p' + str(i) for i in range(len(params_list))]
     print('\nhistory tunning params:')
     print(pretty_dataframe(dfpa_list))
-    print('\n================================================================================\n')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
     
-    if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
+    #if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
     
     #step 2
     print('step2：tune max_depth & min_child_weight...') 
@@ -156,7 +160,8 @@ def main(train_data_path,test_data_path,outputdir = './aa_tunning_results'):
     #dfpa_list.columns = ['p' + str(i) for i in range(len(params_list))]
     print('\nhistory tunning params:')
     print(pretty_dataframe(dfpa_list))
-    print('\n================================================================================\n')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
 
     # step 3
     print('step3：tune gamma...')
@@ -169,7 +174,8 @@ def main(train_data_path,test_data_path,outputdir = './aa_tunning_results'):
     #dfpa_list.columns = ['p' + str(i) for i in range(len(params_list))]
     print('\nhistory tunning params:')
     print(pretty_dataframe(dfpa_list))
-    print('\n================================================================================\n')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
 
     # step 4
     print('step4：tune subsample & colsample_bytree...')  
@@ -183,7 +189,8 @@ def main(train_data_path,test_data_path,outputdir = './aa_tunning_results'):
     #dfpa_list.columns = ['p' + str(i) for i in range(len(params_list))]
     print('\nhistory tunning params:')
     print(pretty_dataframe(dfpa_list))
-    print('\n================================================================================\n')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
 
     # step 5
     print('step5: tune reg_alpha...') 
@@ -196,7 +203,8 @@ def main(train_data_path,test_data_path,outputdir = './aa_tunning_results'):
     #dfpa_list.columns = ['p' + str(i) for i in range(len(params_list))]
     print('\nhistory tunning params:')
     print(pretty_dataframe(dfpa_list))
-    print('\n================================================================================\n')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
 
     # step 6
     print('step6: tune reg_lambda...') 
@@ -209,9 +217,10 @@ def main(train_data_path,test_data_path,outputdir = './aa_tunning_results'):
     #dfpa_list.columns = ['p' + str(i) for i in range(len(params_list))]
     print('\nhistory tunning params:')
     print(pretty_dataframe(dfpa_list))
-    print('\n================================================================================\n')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
 
-    if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
+    #if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
     
     # step 7
     print('step7: lower learning_rate and rise n_estimators...')
@@ -229,9 +238,10 @@ def main(train_data_path,test_data_path,outputdir = './aa_tunning_results'):
     #dfpa_list.columns = ['p' + str(i) for i in range(len(params_list))]
     print('\nhistory tunning params:')
     print(pretty_dataframe(dfpa_list))
-    print('\n================================================================================\n')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
     
-    if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
+    #if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
 
     ###generate results
     print('generate results... ')
@@ -241,7 +251,7 @@ def main(train_data_path,test_data_path,outputdir = './aa_tunning_results'):
         dfscore_filter = pd.DataFrame(dfscore.loc[dfscore['score_gap'].astype('f4').idxmin(),:]).T
     best_id = dfscore_filter['validate_score'].astype('f4').idxmax()
     
-    if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
+    #if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
         
     tune.params_dict = deepcopy(tune.dfparams.loc[best_id,'params_dict'])
     print('\n========================================\n')
@@ -256,7 +266,7 @@ def main(train_data_path,test_data_path,outputdir = './aa_tunning_results'):
     if not os.path.exists(outputdir):
         os.makedirs(outputdir)
     
-    if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
+    #if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
     
     with open(outputdir +'/best_parameters.json','w') as f:
         json.dump(tune.params_dict,f,cls = numpyJsonEncoder)

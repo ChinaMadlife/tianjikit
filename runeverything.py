@@ -6,9 +6,9 @@ from tianjikit import runtunning
 from tianjikit import runpipeline
 
 def main(train_data_path,test_data_path,outputdir = './aa_everything_result'):
-    print('\n****************************  runtunning ***************************************\n')
+    print('\n********** runtunning.main() **********')
     best_params = runtunning.main(train_data_path,test_data_path,outputdir)
-    print('\n***************************  runpipeline ***************************************\n')
+    print('\n********** runpipeline.main() **********')
     runpipeline.main(train_data_path,test_data_path,outputdir,best_params)
     
 if __name__ == 'main':
