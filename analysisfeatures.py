@@ -137,7 +137,7 @@ class AnalysisFeatures(object):
             if np.mod(i+1,100) == 0 : 
                 print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
         print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
-        dfks = dfks.sort_index(axis = 0,level = [1,2],ascending = [False,True])
+        dfks = dfks.sort_index(axis = 0,level = [1,0,2],ascending = [False,True,True])
         return(dfks)
     
     
@@ -161,7 +161,7 @@ class AnalysisFeatures(object):
             if np.mod(i+1,100) == 0 : 
                 print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
         print('[{}|{}|{}]'.format(features_num,i+1,features_num-i-1))
-        dfiv = dfiv.sort_index(axis = 0,level = [1,2],ascending = [False,True])
+        dfiv = dfiv.sort_index(axis = 0,level = [1,0,2],ascending = [False,True,True])
         return(dfiv)
     
     

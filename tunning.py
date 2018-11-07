@@ -118,7 +118,7 @@ class Tunning(object):
     params_dict['colsample_bytree'] = 0.8     # 纵向采样，特征采样比例，通常取值在 [0.5，1]之间 
 
     # regulazation参数 
-    # Omega(f) = gamma*T + reg_alpha* sum(abs(wj)) + reg_lambda  
+    # Omega(f) = gamma*T + reg_alpha* sum(abs(wj)) + reg_lambda* sum(wj**2) 
     params_dict['reg_alpha'] = 0              #L1 正则化项的权重系数，越大模型越保守，通常取值在[0,1]之间。
     params_dict['reg_lambda'] = 1             #L2 正则化项的权重系数，越大模型越保守，通常取值在[1,100]之间。
 
