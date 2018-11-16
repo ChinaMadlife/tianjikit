@@ -78,7 +78,7 @@ params_dict['reg_lambda'] = 1             #L2 正则化项的权重系数，越�
 
 # 以下参数通常不需要调整
 params_dict['objective'] = 'binary:logistic'
-params_dict['n_jobs'] = 4
+params_dict['n_jobs'] = -1
 params_dict['scale_pos_weight'] = 1        #不平衡样本时设定为正值可以使算法更快收敛。
 params_dict['seed'] = 0
 
