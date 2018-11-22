@@ -7,8 +7,8 @@ import os,sys
 #change the nine arguments here!!!
 
 job_name = 'ly_word_count'
-input_path = '/user/hive/warehouse/tj_tmp.db/ly_wordcount_input/*'
-output_path = '/user/hive/warehouse/tj_tmp.db/ly_wordcount_output'
+hdfs_input = '/user/hive/warehouse/tj_tmp.db/ly_wordcount_input'
+hdfs_output = '/user/hive/warehouse/tj_tmp.db/ly_wordcount_output'
 mapper_file = 'word_count_mapper.py'
 reducer_file = 'word_count_reducer.py'
 map_argv_files = '' 
@@ -17,22 +17,22 @@ other_relayed_files = ''  #files to import or other use
 getmerge_file = ''  #file to getmerge the output
 
 # if there are more than 1 map_argv_files or reduce_argv_files 
-# or other_relayed_files,
+# or other_relayed_files or hdfs_input or hdfs_output
 # seperate them with a blank like below
 # map_argv_files = 'file1 file2 file3'
 
 # don't change the code below!!!
 #================================================================================
 
-def main(job_name,input_path,output_path,mapper_file,reducer_file,map_argv_files = "",
+def main(job_name,hdfs_input,hdfs_output,mapper_file,reducer_file,map_argv_files = "",
     reduce_argv_files = "",other_relayed_files = "",getmerge_file = ""): 
     '''
     Examples:
     --------
     import mapreduce
     kv = {"job_name":"ly_word_count",
-          "input_path":"/user/hive/warehouse/tj_tmp.db/ly_wordcount_input/*",
-          "output_path":"/user/hive/warehouse/tj_tmp.db/ly_wordcount_output",
+          "hdfs_input":"/user/hive/warehouse/tj_tmp.db/ly_wordcount_input/*",
+          "hdfs_output":"/user/hive/warehouse/tj_tmp.db/ly_wordcount_output",
           "mapper_file":"word_count_mapper.py",
           "reducer_file":"word_count_reducer.py",
           "map_argv_files":"",
@@ -59,15 +59,15 @@ def main(job_name,input_path,output_path,mapper_file,reducer_file,map_argv_files
     
     print('start %s...'%job_name)
     print('================================================================================\n')
-    print('input_path: %s'%input_path)
-    print('output_path: %s'%output_path)
+    print('input: %s'%hdfs_input)
+    print('output: %s'%hdfs_output)
     print('map: %s'%set_mapper)
     print('reduce: %s'%set_reducer)
 
     COMMAND_HEAD = "hadoop jar /opt/cloudera/parcels/CDH-5.3.1-1.cdh5.3.1.p0.5/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -libjars  /opt/cloudera/parcels/CDH-5.3.1-1.cdh5.3.1.p0.5/jars/hive-exec-0.13.1-cdh5.3.1.jar "
 
-    command = 'hadoop fs -rm -r ' + output_path
+    command = 'hadoop fs -rm -r ' + hdfs_output
     os.system(command)
 
     print('================================================================================\n')
@@ -83,8 +83,8 @@ def main(job_name,input_path,output_path,mapper_file,reducer_file,map_argv_files
             ' -D stream.num.map.output.key.fields=1' +\
             ' -D num.key.fields.for.partition=1' +\
             ' -D mapreduce.job.name=%s' % job_name +\
-            ' -input ' + input_path + \
-            ' -output ' + output_path + \
+            ' -input ' + hdfs_input + \
+            ' -output ' + hdfs_output + \
             ' -mapper '+ set_mapper + \
             ' -reducer '+ set_reducer + \
             ' -partitioner org.apache.hadoop.mapred.lib.KeyFieldBasedPartitioner'
@@ -93,7 +93,7 @@ def main(job_name,input_path,output_path,mapper_file,reducer_file,map_argv_files
     if ret != 0:
         print(job_name + ' mr job error!',file = sys.stderr)
 
-    lastcommand = 'hdfs dfs -getmerge '+ output_path + ' '+ getmerge_file
+    lastcommand = 'hdfs dfs -getmerge '+ hdfs_output + ' '+ getmerge_file
 
     if getmerge_file:
         os.system(lastcommand)
@@ -105,7 +105,7 @@ def get_logs(taskid,logfile):
 
 if __name__ == '__main__':
     
-    main(job_name,input_path,output_path,mapper_file,reducer_file,
+    main(job_name,hdfs_input,hdfs_output,mapper_file,reducer_file,
         map_argv_files,reduce_argv_files,other_relayed_files,getmerge_file)
 
 ######
