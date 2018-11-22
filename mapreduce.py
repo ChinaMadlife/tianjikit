@@ -63,15 +63,14 @@ def main(job_name,hdfs_input,hdfs_output,mapper_file,reducer_file,map_argv_files
     print('output: %s'%hdfs_output)
     print('map: %s'%set_mapper)
     print('reduce: %s'%set_reducer)
-
+    print('================================================================================\n')
+    
     COMMAND_HEAD = "hadoop jar /opt/cloudera/parcels/CDH-5.3.1-1.cdh5.3.1.p0.5/lib/hadoop-mapreduce/hadoop-streaming.jar \
     -libjars  /opt/cloudera/parcels/CDH-5.3.1-1.cdh5.3.1.p0.5/jars/hive-exec-0.13.1-cdh5.3.1.jar "
 
     command = 'hadoop fs -rm -r ' + hdfs_output
     os.system(command)
-
-    print('================================================================================\n')
-
+    
     command =  COMMAND_HEAD + \
             ' -files ' + set_files +\
             ' -D mapreduce.job.map.tasks=2000' +\
