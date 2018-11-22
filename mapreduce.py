@@ -57,7 +57,7 @@ def main(job_name,hdfs_input,hdfs_output,mapper_file,reducer_file,map_argv_files
     files = [mapper_file,reducer_file,map_argv_files,reduce_argv_files,other_relayed_files]
     set_files = ','.join(filter(lambda x:x,files)).replace(' ',',')
     
-    print('start %s...'%job_name)
+    print('/n/nstart %s...'%job_name)
     print('================================================================================\n')
     print('input: %s'%hdfs_input)
     print('output: %s'%hdfs_output)
