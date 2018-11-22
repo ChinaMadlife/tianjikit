@@ -40,7 +40,7 @@ def __psi(train_frequencies,test_frequencies):
 def psi_analysis(train_data,test_data,parts = 10):
     
     dftrain = pd.DataFrame(train_data,columns = ['x'])
-    dftest  = pd.DataFrame(test_data,columns = ['x']).dropna()
+    dftest  = pd.DataFrame(test_data,columns = ['x'])
 
     # 处理nan值逻辑
     dftrain_nan = dftrain.loc[np.isnan(dftrain['x']),:]
