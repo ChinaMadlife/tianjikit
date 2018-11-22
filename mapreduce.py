@@ -61,8 +61,8 @@ def main(job_name,hdfs_input,hdfs_output,mapper_file,reducer_file,map_argv_files
     print('================================================================================\n')
     print('input: %s'%hdfs_input)
     print('output: %s'%hdfs_output)
-    print('map: %s'%set_mapper)
-    print('reduce: %s'%set_reducer)
+    print('map: %s'%set_mapper.replace('"',''))
+    print('reduce: %s'%set_reducer.replace('"',''))
     print('================================================================================\n')
     
     COMMAND_HEAD = "hadoop jar /opt/cloudera/parcels/CDH-5.3.1-1.cdh5.3.1.p0.5/lib/hadoop-mapreduce/hadoop-streaming.jar \
