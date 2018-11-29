@@ -11,7 +11,9 @@ import datetime,sys
 import ks,outliers,dropfeature,fillnan,scalefeature
 import numpy as np
 import pandas as pd
-from xgboost.sklearn import XGBClassifier
+from xgboost import XGBClassifier
+import lightgbm as lgb
+from lightgbm import LGBMClassifier
 from sklearn import linear_model
 from sklearn import ensemble
 from sklearn.neural_network import MLPClassifier
@@ -61,26 +63,39 @@ class RunModel(object):
     dfimportance = model.dfimportances['rf']
     
 
-    # 训练GBDT模型
+    # 训练gbdt模型
     from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
             outliers_th=None, fillna_method='most', scale_method=None,selected_features=None)
     gbdt = model.train_gbdt(cv=5, model_idx=5,
-           learning_rate=0.01, n_estimators=1000, max_depth= 3, min_samples_split= 50, 
+           learning_rate=0.01, n_estimators=50, max_depth= 3, min_samples_split= 50, 
            min_samples_leaf= 5, subsample=0.7, max_features='sqrt',random_state= 0) 
     model.test(gbdt)
     dfimportance = model.dfimportances['gbdt']
     
 
-    # 训练XGBOOST模型
+    # 训练xgboost模型
     from tianjikit.runmodel import RunModel
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
             outliers_th=None, fillna_method= None, scale_method= None,selected_features=None)
     xgb = model.train_xgb(cv=5, model_idx=5,
-          learning_rate=0.1,n_estimators=1000, max_depth=5, min_child_weight=1, gamma=0, 
+          learning_rate=0.1,n_estimators=50, max_depth=5, min_child_weight=1, gamma=0, 
           subsample=0.8,colsample_bytree=0.8,scale_pos_weight=1, n_jobs=4, seed=10) 
     model.test(xgb)
     dfimportance = model.dfimportances['xgb']
+    
+    
+    # 训练lightgbm模型
+    from tianjikit.runmodel import RunModel
+    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
+            outliers_th=None, fillna_method= None, scale_method= None,selected_features=None)
+    lgbm = model.train_lgbm(cv = 5, model_idx = 1,    
+                   num_leaves=31, max_depth=-1, learning_rate=0.1,n_estimators=10,max_bin=255,
+                   min_split_gain=0.0, min_child_weight=0.001, min_child_samples=20, 
+                   subsample=1.0, subsample_freq=1, colsample_bytree=1.0,
+                   reg_alpha=0.0, reg_lambda=0.0, random_state=0, n_jobs=-1)
+    model.test(lgbm)
+    dfimportance = model.dfimportances['lgbm']
     
     
     # 训练神经网络模型
@@ -299,7 +314,40 @@ class RunModel(object):
         dfimportance['feature'] = [self.__feature_dict.get(x,x) for x in dfimportance['feature']]
         self.dfimportances['xgb'] = dfimportance
         return clf
+
+    def train_lgbm(self, cv = 5, model_idx = 1,
+        num_leaves=31, max_depth=-1, learning_rate=0.1,n_estimators=10,max_bin=255,
+        min_split_gain=0.0, min_child_weight=0.001, min_child_samples=30,
+        subsample=1.0, subsample_freq=1, colsample_bytree=1.0,
+        reg_alpha=0.0, reg_lambda=0.0, random_state=0, n_jobs=-1,**kv):
+            
+        lgbm = LGBMClassifier(num_leaves = num_leaves,max_depth = max_depth,
+        learning_rate = learning_rate, n_estimators = n_estimators,max_bin = max_bin,
+        min_split_gain = min_split_gain,min_child_weight = min_child_weight,min_child_samples = min_child_samples,
+        subsample = subsample,subsample_freq = subsample_freq,colsample_bytree = colsample_bytree,
+        reg_alpha = reg_alpha,reg_lambda = reg_lambda,
+        random_state = random_state,n_jobs = n_jobs, 
+        silent = True,subsample_for_bin=200000,boosting_type='gbdt',objective=None,**kv)
+        
+        info = "start train lightgbm model ..."
+        print(info)
+        self.report_info = self.report_info + info + '\n'
+        
+        clf = self.train(lgbm,cv = cv,model_idx = model_idx) 
+        
+        # 计算特征重要性
+        cols = self.X_train.columns
+        dfimportance = pd.DataFrame(clf.feature_importances_.reshape(-1),columns = ['importance'])
+        dfimportance.insert(0,'feature',cols)
+        try:
+            dfimportance = dfimportance.sort_values('importance',ascending= False)
+        except AttributeError as err:
+            dfimportance = dfimportance.sort('importance',ascending= False) 
+        dfimportance['feature'] = [self.__feature_dict.get(x,x) for x in dfimportance['feature']]
+        self.dfimportances['lgbm'] = dfimportance
+        return clf
     
+  
     def train(self,clf,cv = 5,model_idx = 5):
         
         if cv:
@@ -379,7 +427,7 @@ class RunModel(object):
             
             info = '\ntrain: ks = {} \t auc = {} '.format(ks_train,auc_train) + '\n'
             prettyks = ks.print_ks(predict_train,self.y_train.values)
-            info = info + prettyks + '\n'
+            info = info + str(prettyks) + '\n'
             print(info)
             self.report_info = self.report_info + info
             
