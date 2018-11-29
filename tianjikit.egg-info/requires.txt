@@ -1,2 +1,1 @@
 xgboost>=0.80
-lightgmb>=2.2.2

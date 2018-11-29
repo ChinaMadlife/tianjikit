@@ -7,8 +7,7 @@ setup(name='tianjikit',
       include_package_data=True,   # 启用清单文件MANIFEST.in
       exclude_package_data={'':['.gitignore','.git']}, #排除文件列表      
       install_requires=[           # 依赖列表
-        'xgboost>=0.80',
-        'lightgmb>=2.2.2'
+        'xgboost>=0.80'
       ],
       long_description=__doc__,
       url='https://github.com/lyhue1991/tianjikit', 
