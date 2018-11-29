@@ -12,8 +12,6 @@ import ks,outliers,dropfeature,fillnan,scalefeature
 import numpy as np
 import pandas as pd
 from xgboost import XGBClassifier
-import lightgbm as lgb
-from lightgbm import LGBMClassifier
 from sklearn import linear_model
 from sklearn import ensemble
 from sklearn.neural_network import MLPClassifier
@@ -22,6 +20,12 @@ from sklearn import preprocessing
 from sklearn import model_selection
 from sklearn import metrics
 from sklearn.model_selection import StratifiedKFold
+
+try:
+    import lightgbm as lgb
+    from lightgbm import LGBMClassifier
+except:
+    print("Warning: can't use lightgbm!",file = sys.stderr)
 
 
 class RunModel(object):
@@ -79,8 +83,11 @@ class RunModel(object):
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
             outliers_th=None, fillna_method= None, scale_method= None,selected_features=None)
     xgb = model.train_xgb(cv=5, model_idx=5,
-          learning_rate=0.1,n_estimators=50, max_depth=5, min_child_weight=1, gamma=0, 
-          subsample=0.8,colsample_bytree=0.8,scale_pos_weight=1, n_jobs=4, seed=10) 
+          learning_rate=0.1,n_estimators=50, 
+          max_depth=5, min_child_weight=30, 
+          gamma=0,reg_alpha = 0,reg_lambda = 1,
+          subsample=0.8,colsample_bytree=0.8,
+          scale_pos_weight=1, n_jobs=4, seed=10) 
     model.test(xgb)
     dfimportance = model.dfimportances['xgb']
     
@@ -290,11 +297,16 @@ class RunModel(object):
         return clf
     
     def train_xgb(self, cv = 5, model_idx = 1,    
-        learning_rate=0.1,n_estimators=50, max_depth=5, min_child_weight=1,gamma=0,subsample=0.8,
-        colsample_bytree=1, n_jobs=-1, scale_pos_weight=1, seed=10,**kv):
+        learning_rate=0.1,n_estimators= 50,
+        max_depth=5, min_child_weight= 20,
+        gamma=0,reg_alpha = 0,reg_lambda = 1,
+        subsample=0.8,colsample_bytree=1, 
+        n_jobs=-1, scale_pos_weight=1, seed=10,**kv):
         
-        xgb = XGBClassifier(learning_rate = learning_rate, n_estimators = n_estimators,max_depth = max_depth,
-                      min_child_weight = min_child_weight,gamma = gamma,subsample = subsample,colsample_bytree = colsample_bytree,
+        xgb = XGBClassifier(learning_rate = learning_rate, n_estimators = n_estimators,
+                      max_depth = max_depth,min_child_weight = min_child_weight,
+                      gamma = gamma,reg_alpha = reg_alpha,reg_lambda = reg_lambda,
+                      subsample = subsample,colsample_bytree = colsample_bytree,
                       n_jobs = n_jobs, scale_pos_weight = scale_pos_weight, seed = seed,**kv)
         
         info = "start train xgboost model ..."
