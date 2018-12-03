@@ -11,11 +11,12 @@ python allmvbigfiles.py
 '''
 from __future__ import print_function
 import os
+import commands
 import time
 import pandas as pd
 
-home_path = '/home/users/liangyun'  # ~主路径
-data_path = '/data/liangyun'        #目标移动路径
+home_path = '~'  # ~主路径
+data_path = '/data/'+commands.getoutput('whoami')   #目标移动路径
 
 SAFESIZE = 20000000 #20G    home_path占用空间小于此安全规模则整体不做任何操作
 BIGDIRSIZE = 4000000 # 4G   home_path下的第一级文件夹小于此规模的不做任何操作
