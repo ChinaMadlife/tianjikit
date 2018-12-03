@@ -12,14 +12,17 @@ import ks,outliers,dropfeature,fillnan,scalefeature
 import numpy as np
 import pandas as pd
 from xgboost import XGBClassifier
-from sklearn import linear_model
-from sklearn import ensemble
-from sklearn.neural_network import MLPClassifier
-from sklearn.externals import joblib
-from sklearn import preprocessing
-from sklearn import model_selection
-from sklearn import metrics
-from sklearn.model_selection import StratifiedKFold
+try:
+    from sklearn import linear_model
+    from sklearn import ensemble
+    from sklearn.neural_network import MLPClassifier
+    from sklearn.externals import joblib
+    from sklearn import preprocessing
+    from sklearn import model_selection
+    from sklearn import metrics
+    from sklearn.model_selection import StratifiedKFold
+except:
+    print("Warning: can't use sklearn or sklearn's version is not 0.192!")
 
 try:
     import lightgbm as lgb
@@ -48,7 +51,7 @@ class RunModel(object):
     
     # 训练逻辑回归模型
     from tianjikit.runmodel import RunModel
-    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
+    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0,
             outliers_th=None, fillna_method='most', scale_method=None,selected_features=None)
     lr = model.train_lr(cv=None, model_idx=5)
     model.test(lr)
@@ -57,7 +60,7 @@ class RunModel(object):
 
     # 训练随机森林模型
     from tianjikit.runmodel import RunModel
-    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
+    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0,
             outliers_th=None, fillna_method='most', scale_method=None,selected_features=None)
     rf = model.train_rf(cv=5, model_idx=5,
           n_estimators=100, max_depth=10, min_samples_split=2,
@@ -69,7 +72,7 @@ class RunModel(object):
 
     # 训练gbdt模型
     from tianjikit.runmodel import RunModel
-    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
+    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0,
             outliers_th=None, fillna_method='most', scale_method=None,selected_features=None)
     gbdt = model.train_gbdt(cv=5, model_idx=5,
            learning_rate=0.01, n_estimators=50, max_depth= 3, min_samples_split= 50, 
@@ -80,7 +83,7 @@ class RunModel(object):
 
     # 训练xgboost模型
     from tianjikit.runmodel import RunModel
-    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
+    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0, ks_th=0,
             outliers_th=None, fillna_method= None, scale_method= None,selected_features=None)
     xgb = model.train_xgb(cv=5, model_idx=5,
           learning_rate=0.1,n_estimators=50, 
@@ -94,7 +97,7 @@ class RunModel(object):
     
     # 训练lightgbm模型
     from tianjikit.runmodel import RunModel
-    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
+    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0, ks_th=0,
             outliers_th=None, fillna_method= None, scale_method= None,selected_features=None)
     lgbm = model.train_lgbm(cv = 5, model_idx = 1,    
                    num_leaves=31, max_depth=-1, learning_rate=0.1,n_estimators=10,max_bin=255,
@@ -107,7 +110,7 @@ class RunModel(object):
     
     # 训练神经网络模型
     from tianjikit.runmodel import RunModel
-    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
+    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, 
             outliers_th=None, fillna_method='most', scale_method= None, selected_features=None)
     nn = model.train_nn( cv = 5, model_idx = 1,
          hidden_layer_sizes=(100,20), activation='relu', alpha=0.0001, 
@@ -117,7 +120,7 @@ class RunModel(object):
 
     """
     
-    def __init__(self,dftrain,dftest = '',coverage_th = 0.1, ks_th = 0, chi2_th = 0, outliers_th = None,
+    def __init__(self,dftrain,dftest = '',coverage_th = 0, ks_th = 0, outliers_th = None,
                  fillna_method = 'infer',scale_method = 'MinMax', selected_features = None):
         
         # 输出预处理提示信息
@@ -129,7 +132,6 @@ class RunModel(object):
         print('coverage threshold:  {}'.format(coverage_th))
         print('outlier threshold:  {}'.format(outliers_th))
         print('ks threshold:  {}'.format(ks_th))
-        print('chi2 threshold:  {}'.format(chi2_th))
         print('fillna method:  {}'.format(fillna_method))
         print('scale method:  {}'.format(scale_method))
         
@@ -168,7 +170,7 @@ class RunModel(object):
                     
         # dropfeature()
         X_train, X_test = dropfeature.drop_feature(X_train,y_train,X_test,coverage_threshold = coverage_th, 
-                          ks_threshold = ks_th, chi2_threshold = chi2_th) 
+                          ks_threshold = ks_th) 
         
         print('feature number remain after dropfeature:  {}'.format(X_train.shape[1]))
         

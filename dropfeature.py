@@ -12,10 +12,12 @@ from sklearn import feature_selection
 import ks
 
 def drop_feature(X_train,y_train,X_test = '',coverage_threshold = 0.1, 
-                 ks_threshold = 0.05, chi2_threshold = 0.05):
+                 ks_threshold = 0.05):
+    
+    if not coverage_threshold and not ks_threshold:
+        return(X_train, X_test)
     
     sample_num = len(X_train)
-    
     for col in X_train.columns:
         
         nan_index = pd.isnull(X_train[col])
@@ -24,10 +26,9 @@ def drop_feature(X_train,y_train,X_test = '',coverage_threshold = 0.1,
         
         coverage_ratio = len(x_col)/float(sample_num)
         class_num = len(set(x_col))
-        chi2_value = feature_selection.chi2(x_col.values.reshape(-1,1),y_col)[0][0] if class_num == 2 else 1
         ks_value = max(ks.ks_analysis(x_col.values,y_col.values)['ks_value']) if class_num > 2 else 1
         if any([class_num <2, coverage_ratio < coverage_threshold,
-                chi2_value < chi2_threshold,ks_value < ks_threshold]) :
+                ks_value < ks_threshold]) :
             X_train = X_train.drop([col],axis = 1)
             if len(X_test): X_test = X_test.drop([col],axis = 1) 
                 
