@@ -22,17 +22,17 @@ def chi2_analysis(data,label):
     TN = len(df[(df['label']<0.5) & (df['feature']<0.5)])
     FN = len(df[(df['label']>=0.5) & (df['feature']<0.5)])
 
-    TPR = float(TP)/(TP+FN) if (TP+FN) else np.nan
-    FPR = float(FP)/(FP+TN) if (FP+TN) else np.nan
+    TPR = float(TP)/(TP+FN) if (TP+FN)>=1 else np.nan
+    FPR = float(FP)/(FP+TN) if (FP+TN)>=1 else np.nan
 
-    overdue_ratio_0 = float(FN)/(FN+TN) if (FN+TN) else np.nan
-    overdue_ratio_1 = float(TP)/(TP+FP) if (TP+FP) else np.nan
+    overdue_ratio_0 = float(FN)/(FN+TN) if (FN+TN)>=1 else np.nan
+    overdue_ratio_1 = float(TP)/(TP+FP) if (TP+FP)>=1 else np.nan
 
-    precision = TP/float(TP+FP) if (TP+FP) else np.nan
-    accuracy = (TP+TN)/float(TP+FN+FP+TN)
+    precision = TP/float(TP+FP) if (TP+FP)>=1 else np.nan
+    accuracy = (TP+TN)/float(TP+FN+FP+TN) if (TP+FN+FP+TN)>=1 else np.nan
 
     chi2, chi2_pvalue = feature_selection.chi2(
-                        df['feature'].values.reshape(-1,1), df['label'])
+                        df['feature'].values.reshape(-1,1), df['label']) if len(df)>=5 else (np.nan,np.nan)
 
     colnames = ['TP','FP','TN','FN','TPR','FPR',
                 'overdue_ratio_0','overdue_ratio_1',

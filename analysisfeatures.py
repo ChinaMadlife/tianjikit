@@ -66,8 +66,9 @@ class AnalysisFeatures(object):
                  if len(dftest)> 0 else dftrain
         
         # 移除非特征列
-        for col in ['phone','id','idcard','id-card','id_card','name','loan_dt','idmap','id_map','id-map']: 
-            if col in dfdata.columns:dfdata.drop(columns = col,inplace = True)
+        for col in {'phone','id','idcard','id-card','id_card','name','loan_dt','idmap','id_map','id-map'}: 
+            if col in dfdata.columns:
+                dfdata.drop(col,axis = 1,inplace = True)
         features = list(dfdata.columns.values)
         try: features.remove('label').remove('loan_dt')
         except: pass
@@ -176,7 +177,6 @@ class AnalysisFeatures(object):
         
         for i,col in enumerate(self.__features):
             dfc = self.__dfdata[[col,'label']].dropna().copy()
-            if len(dfc[[col]].drop_duplicates())>5:continue
             dfc[col] = dfc[col].astype('f4')
             featuredata = preprocessing.minmax_scale(dfc[col].values)
             label = dfc['label'].values
