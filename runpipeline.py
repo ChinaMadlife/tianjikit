@@ -12,10 +12,10 @@ params_dict = {
     'learning_rate':0.1,
     'n_estimators':50,
     'max_depth':3,
-    'min_child_weight':10,
+    'min_child_weight':30,
     'gamma':0,
     'subsample':0.8,
-    'colsample_bytree':0.9,
+    'colsample_bytree':1,
     'reg_alpha':0,
     'reg_lambda':1
    }
@@ -49,7 +49,7 @@ def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports',para
     dfpsi = afs.psi_analysises()
 
     # 训练XGBOOST模型
-    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, chi2_th=0, 
+    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, 
             outliers_th=None, fillna_method= None, scale_method= None,selected_features=None)
     xgb = model.train_xgb(cv=5, model_idx=5,scale_pos_weight=1, n_jobs=-1, seed=10,**params_dict) 
     model.test(xgb)
