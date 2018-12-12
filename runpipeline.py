@@ -47,6 +47,11 @@ def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports',para
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('\n================================================================================ %s\n'%nowtime)
     dfpsi = afs.psi_analysises()
+    
+    # 保存相应文件
+    dfbasic.to_excel(outputdir + '/basic_analysises.xlsx',encoding = 'utf-8')
+    dfks.to_excel(outputdir +'/ks_analysises.xlsx',encoding = 'utf-8')
+    dfpsi.to_excel(outputdir + '/psi_analysises.xlsx',encoding = 'utf-8')
 
     # 训练XGBOOST模型
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, 
@@ -55,11 +60,8 @@ def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports',para
     model.test(xgb)
     dfimportance = model.dfimportances['xgb']
     report_info = model.report_info
-
-    # 保存相应文件共6个
-    dfbasic.to_excel(outputdir + '/basic_analysises.xlsx',encoding = 'utf-8')
-    dfks.to_excel(outputdir +'/ks_analysises.xlsx',encoding = 'utf-8')
-    dfpsi.to_excel(outputdir + '/psi_analysises.xlsx',encoding = 'utf-8')
+    
+    # 保存相应文件
     dfimportance.to_excel(outputdir + '/feature_importance.xlsx',encoding = 'utf-8')
     with open(outputdir +'/xgboost_model.pkl','w') as f:
         pickle.dump(xgb,f)
