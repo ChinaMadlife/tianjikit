@@ -20,6 +20,7 @@ params_dict = {
     'reg_lambda':1
    }
 
+
 def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports',params_dict = params_dict):
     
     if not os.path.exists(outputdir):
@@ -49,9 +50,14 @@ def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports',para
     dfpsi = afs.psi_analysises()
     
     # 保存相应文件
-    dfbasic.to_excel(outputdir + '/basic_analysises.xlsx',encoding = 'utf-8')
-    dfks.to_excel(outputdir +'/ks_analysises.xlsx',encoding = 'utf-8')
-    dfpsi.to_excel(outputdir + '/psi_analysises.xlsx',encoding = 'utf-8')
+    try:
+        dfbasic.to_excel(outputdir + '/basic_analysises.xlsx',encoding = 'utf-8')
+        dfks.to_excel(outputdir +'/ks_analysises.xlsx',encoding = 'utf-8')
+        dfpsi.to_excel(outputdir + '/psi_analysises.xlsx',encoding = 'utf-8')
+    except:
+        dfbasic.to_csv(outputdir + '/basic_analysises.csv',sep = '\t',encoding = 'utf-8')
+        dfks.to_csv(outputdir +'/ks_analysises.csv',sep = '\t',encoding = 'utf-8')
+        dfpsi.to_excel(outputdir + '/psi_analysises.csv',sep = '\t',encoding = 'utf-8')
 
     # 训练XGBOOST模型
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, 
@@ -62,7 +68,11 @@ def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports',para
     report_info = model.report_info
     
     # 保存相应文件
-    dfimportance.to_excel(outputdir + '/feature_importance.xlsx',encoding = 'utf-8')
+    try:
+        dfimportance.to_excel(outputdir + '/feature_importance.xlsx',encoding = 'utf-8')
+    except:
+        dfimportance.to_csv(outputdir + '/feature_importance.csv',sep = '\t',encoding = 'utf-8')
+        
     with open(outputdir +'/xgboost_model.pkl','w') as f:
         pickle.dump(xgb,f)
     with open(outputdir + '/model_report','w') as f:
@@ -79,3 +89,4 @@ if __name__ == '__main__':
         params_json = sys.argv[4]
         params_dict = json.load(params_json)
     main(train_data_path,test_data_path,outputdir,params_dict = params_dict)        
+    

@@ -66,9 +66,13 @@ class AnalysisFeatures(object):
                  if len(dftest)> 0 else dftrain
         
         # 移除非特征列
-        for col in {'phone','id','idcard','id-card','id_card','name','loan_dt','idmap','id_map','id-map'}: 
+        for col in {'phone','id','unique_id','uniq_id','idcard','id-card','id_card','name','loan_dt','idmap','id_map','id-map'}: 
             if col in dfdata.columns:
                 dfdata.drop(col,axis = 1,inplace = True)
+                
+        # 校验是否存在非数值列       
+        assert not np.dtype('O') in dfdata.dtypes.values, 'illegle input with columns not numerical!'
+        
         features = list(dfdata.columns.values)
         try: features.remove('label').remove('loan_dt')
         except: pass

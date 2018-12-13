@@ -137,10 +137,13 @@ class RunModel(object):
         
        
         # 去掉['phone','id','idcard','id_card','loan_dt','name','id_map']等非特征列
-        for  col in ['name','phone','id','idcard','id_card','id-card','loan_dt','id_map','idmap','id-map']:
+        for  col in {'phone','id','unique_id','uniq_id','idcard','id-card','id_card','name','loan_dt','idmap','id_map','id-map'}:
             if col in dftrain.columns:
-                dftrain = dftrain.drop([col],axis = 1)
-                if len(dftest):dftest = dftest.drop([col],axis = 1)
+                dftrain = dftrain.drop(col,axis = 1)
+                if len(dftest):dftest = dftest.drop(col,axis = 1)
+                    
+        # 校验输入中是否存在非数值特征列      
+        assert not np.dtype('O') in dftrain.dtypes.values, 'illegle input dftrain with feature columns not numerical!'
         
         # 如果selected_features 不为空，则进行特征筛选
         if selected_features:
@@ -305,12 +308,19 @@ class RunModel(object):
         subsample=0.8,colsample_bytree=1, 
         n_jobs=-1, scale_pos_weight=1, seed=10,**kv):
         
-        xgb = XGBClassifier(learning_rate = learning_rate, n_estimators = n_estimators,
+        try:
+            xgb = XGBClassifier(learning_rate = learning_rate, n_estimators = n_estimators,
                       max_depth = max_depth,min_child_weight = min_child_weight,
                       gamma = gamma,reg_alpha = reg_alpha,reg_lambda = reg_lambda,
                       subsample = subsample,colsample_bytree = colsample_bytree,
                       n_jobs = n_jobs, scale_pos_weight = scale_pos_weight, seed = seed,**kv)
-        
+        except:
+            xgb = XGBClassifier(learning_rate = learning_rate, n_estimators = n_estimators,
+                      max_depth = max_depth,min_child_weight = min_child_weight,
+                      gamma = gamma,reg_alpha = reg_alpha,reg_lambda = reg_lambda,
+                      subsample = subsample,colsample_bytree = colsample_bytree,
+                      nthread = n_jobs, scale_pos_weight = scale_pos_weight, seed = seed,**kv)
+            
         info = "start train xgboost model ..."
         print(info)
         self.report_info = self.report_info + info + '\n'
