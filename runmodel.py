@@ -212,14 +212,14 @@ class RunModel(object):
                 X_train[col] = outliers.drop_outliers(X_train[col].values, X_train[col].values, alpha = self.outliers_th) 
                 if len(dftest): X_test[col] = outliers.drop_outliers(X_train[col].values,X_test[col].values, alpha = self.outliers_th)  
                     
-        # dropfeature()
+        # drop_feature()
         X_train, X_test = dropfeature.drop_feature(X_train,y_train,X_test,coverage_threshold = self.coverage_th, 
                           ks_threshold = self.ks_th) 
         
         print('feature number remain after dropfeature:  {}'.format(X_train.shape[1]))
         
         
-        # fillnan()
+        # fill_nan()
         if self.fillna_method:
             X_train, X_test = fillnan.fill_nan(X_train,y_train,X_test,method = self.fillna_method)
         
@@ -227,7 +227,7 @@ class RunModel(object):
         nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print('\n================================================================================ %s\n'%nowtime)
         
-        # scalefeature()
+        # scale_feature()
         if self.scale_method:
             X_train, X_test  = scalefeature.scale_feature(X_train,X_test,method = self.scale_method)
         
@@ -378,12 +378,12 @@ class RunModel(object):
         reg_alpha=0.0, reg_lambda=0.0, random_state=0, n_jobs=-1,**kv):
             
         lgbm = LGBMClassifier(num_leaves = num_leaves,max_depth = max_depth,
-        learning_rate = learning_rate, n_estimators = n_estimators,max_bin = max_bin,
-        min_split_gain = min_split_gain,min_child_weight = min_child_weight,min_child_samples = min_child_samples,
-        subsample = subsample,subsample_freq = subsample_freq,colsample_bytree = colsample_bytree,
-        reg_alpha = reg_alpha,reg_lambda = reg_lambda,
-        random_state = random_state,n_jobs = n_jobs, 
-        silent = True,subsample_for_bin=200000,boosting_type='gbdt',objective=None,**kv)
+                    learning_rate = learning_rate, n_estimators = n_estimators,max_bin = max_bin,
+                    min_split_gain = min_split_gain,min_child_weight = min_child_weight,min_child_samples = min_child_samples,
+                    subsample = subsample,subsample_freq = subsample_freq,colsample_bytree = colsample_bytree,
+                    reg_alpha = reg_alpha,reg_lambda = reg_lambda,
+                    random_state = random_state,n_jobs = n_jobs, 
+                    silent = True,subsample_for_bin=200000,boosting_type='gbdt',objective=None,**kv)
         
         info = "start train lightgbm model ..."
         print(info)
