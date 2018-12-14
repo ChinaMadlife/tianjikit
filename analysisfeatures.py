@@ -60,8 +60,13 @@ class AnalysisFeatures(object):
     
     def __init__(self,dftrain,dftest = pd.DataFrame()):
         
-        # 若dftest未赋值，根据dftrain进行basic_analysis,否则合并
+        # 校验是否有label列
+        assert 'label' in dftrain.columns, 'illegal input,there should be a  "label" column in dftrain!'
         
+        # 校验label列的合法性
+        assert set(dftrain['label']) == {0,1},'illegal label values,label can only be 0 or 1!'
+        
+        # 若dftest未赋值，根据dftrain进行basic_analysis,否则合并
         dfdata = pd.concat([dftrain,dftest],ignore_index = True) \
                  if len(dftest)> 0 else dftrain
         
@@ -70,8 +75,13 @@ class AnalysisFeatures(object):
             if col in dfdata.columns:
                 dfdata.drop(col,axis = 1,inplace = True)
                 
-        # 校验是否存在非数值列       
-        assert not np.dtype('O') in dfdata.dtypes.values, 'illegle input with columns not numerical!'
+        # 校验是否存在非数值列 
+        try:
+            assert not np.dtype('O') in dfdata.dtypes.values
+        except:
+            object_cols = dfdata.columns[dfdata.dtypes == np.object].tolist()
+            print('removed feature columns not numerical: %s'%(','.join(map(str,object_cols))),file = sys.stderr)
+            dfdata.drop(object_cols,axis = 1,inplace = True)
         
         features = list(dfdata.columns.values)
         try: features.remove('label').remove('loan_dt')

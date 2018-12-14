@@ -123,6 +123,12 @@ class RunModel(object):
     def __init__(self,dftrain,dftest = '',coverage_th = 0, ks_th = 0, outliers_th = None,
                  fillna_method = 'infer',scale_method = 'MinMax', selected_features = None):
         
+        # 校验是否有label列
+        assert 'label' in dftrain.columns, 'illegal input,there should be a  "label" column in dftrain!'
+        
+        # 校验label列的合法性
+        assert set(dftrain['label']) == {0,1},'illegal label values,label can only be 0 or 1!'
+        
         # 输出预处理提示信息
         nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print('\n================================================================================ %s\n'%nowtime)
@@ -142,8 +148,14 @@ class RunModel(object):
                 dftrain = dftrain.drop(col,axis = 1)
                 if len(dftest):dftest = dftest.drop(col,axis = 1)
                     
-        # 校验输入中是否存在非数值特征列      
-        assert not np.dtype('O') in dftrain.dtypes.values, 'illegle input dftrain with feature columns not numerical!'
+        # 校验是否存在非数值列 
+        try:
+            assert not np.dtype('O') in dftrain.dtypes.values
+        except:
+            object_cols = dftrain.columns[dftrain.dtypes == np.object].tolist()
+            print('removed feature columns not numerical: %s'%(','.join(map(str,object_cols))),file = sys.stderr)
+            dftrain = dftrain.drop(object_cols,axis = 1)
+            if len(dftest):dftest = dftest.drop(object_cols,axis = 1)
         
         # 如果selected_features 不为空，则进行特征筛选
         if selected_features:

@@ -24,12 +24,13 @@ BIGFILESIZE = 1000000 # 1G  不符合以上两点规则且大于此规模的单�
 
 def mv_big_files(name):
     '''
-    usage:
+    Usage
     ------
     当name为文件时且大小大于 BIGFILESIZE时会被移动。
     当name为路径时，其下面所有大于BIGFILESIZE的文件会被移动。递归作用。
     注：不得将此函数直接应用到home路径。
-    example:
+    
+    Examples
     ------
     from allmvbigfiles import mv_big_files
     mv_big_files('~/xx_raw_data')  #移动文件 
