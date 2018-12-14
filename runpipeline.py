@@ -57,7 +57,7 @@ def main(train_data_path,test_data_path,outputdir = './aa_pipeline_reports',para
     except:
         dfbasic.to_csv(outputdir + '/basic_analysises.csv',sep = '\t',encoding = 'utf-8')
         dfks.to_csv(outputdir +'/ks_analysises.csv',sep = '\t',encoding = 'utf-8')
-        dfpsi.to_excel(outputdir + '/psi_analysises.csv',sep = '\t',encoding = 'utf-8')
+        dfpsi.to_csv(outputdir + '/psi_analysises.csv',sep = '\t',encoding = 'utf-8')
 
     # 训练XGBOOST模型
     model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, 
