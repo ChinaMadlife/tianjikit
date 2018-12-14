@@ -7,7 +7,7 @@
 #usage: run model
 ##################################################
 from __future__ import print_function
-import datetime,sys
+import datetime,sys,os
 import ks,outliers,dropfeature,fillnan,scalefeature
 import numpy as np
 import pandas as pd
@@ -91,7 +91,7 @@ class RunModel(object):
           gamma=0,reg_alpha = 0,reg_lambda = 1,
           subsample=0.8,colsample_bytree=0.8,
           scale_pos_weight=1, n_jobs=4, seed=10) 
-    model.test(xgb)
+    model.test(xgb,dftest)
     dfimportance = model.dfimportances['xgb']
     
     
@@ -116,7 +116,7 @@ class RunModel(object):
          hidden_layer_sizes=(100,20), activation='relu', alpha=0.0001, 
          learning_rate='constant', learning_rate_init=0.001, max_iter=200,tol=0.0001, 
          early_stopping=False, validation_fraction=0.1, warm_start=False, random_state = None)
-    model.test(nn)
+    model.test(nn,dftest)
 
     """
     
@@ -129,17 +129,49 @@ class RunModel(object):
         # 校验label列的合法性
         assert set(dftrain['label']) == {0,1},'illegal label values,label can only be 0 or 1!'
         
+        # 制作特征名称映射表，复杂的特征名可能导致xgboost出错
+        self.__feature_dict = {'feature'+ str(i): name for i,name in enumerate(dftrain.columns.drop('label'))}
+        self.__inverse_feature_dict = dict(zip(self.__feature_dict.values(),self.__feature_dict.keys()))
+        
+        self.dftrain = dftrain
+        self.dftest = dftest
+        
+        # 记录预处理参数信息
+        self.coverage_th = coverage_th
+        self.ks_th = ks_th
+        self.outliers_th = outliers_th
+        self.fillna_method = fillna_method
+        self.scale_method = scale_method
+        self.selected_features = selected_features
+        
+        X_train,y_train,X_test,y_test = self.preprocess_data(self.dftrain,self.dftest)
+        
+       
+        # 预处理后的训练和验证集
+        self.X_train,self.y_train = X_train,y_train
+        self.X_test,self.y_test  = X_test,y_test
+        
+        
+        # 特征重要性
+        self.dfimportances = {} 
+        
+        # 报告信息
+        self.report_info = ''
+        
+        
+    def preprocess_data(self,dftrain,dftest):
+        
         # 输出预处理提示信息
         nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print('\n================================================================================ %s\n'%nowtime)
         print('start data preprocessing ...\n')
         print('train set size:  {}'.format(len(dftrain)))
         print('test set size:  {}'.format(len(dftest)))
-        print('coverage threshold:  {}'.format(coverage_th))
-        print('outlier threshold:  {}'.format(outliers_th))
-        print('ks threshold:  {}'.format(ks_th))
-        print('fillna method:  {}'.format(fillna_method))
-        print('scale method:  {}'.format(scale_method))
+        print('coverage threshold:  {}'.format(self.coverage_th))
+        print('outlier threshold:  {}'.format(self.outliers_th))
+        print('ks threshold:  {}'.format(self.ks_th))
+        print('fillna method:  {}'.format(self.fillna_method))
+        print('scale method:  {}'.format(self.scale_method))
         
        
         # 去掉['phone','id','idcard','id_card','loan_dt','name','id_map']等非特征列
@@ -158,16 +190,13 @@ class RunModel(object):
             if len(dftest):dftest = dftest.drop(object_cols,axis = 1)
         
         # 如果selected_features 不为空，则进行特征筛选
-        if selected_features:
-            remained_cols = [col for col in dftrain.columns if col in selected_features + ['label']]
+        if self.selected_features:
+            remained_cols = [col for col in dftrain.columns if col in self.selected_features + ['label']]
             dftrain = dftrain[remained_cols]
             if len(dftest):dftest = dftest[remained_cols]
                 
-        # 制作特征名称映射表，复杂的特征名可能导致xgboost出错
-        self.__feature_dict = {'feature'+ str(i): name for i,name in enumerate(dftrain.columns.drop('label'))}
-        self.__inverse_feature_dict = dict(zip(self.__feature_dict.values(),self.__feature_dict.keys()))
         dftrain.columns = [self.__inverse_feature_dict.get(x,x) for x in dftrain.columns]
-        dftest.columns = [self.__inverse_feature_dict.get(x,x) for x in dftest.columns]
+        if len(dftest):dftest.columns = [self.__inverse_feature_dict.get(x,x) for x in dftest.columns]
                     
         # 分割feature和label
         X_train = dftrain.drop(['label'],axis = 1)
@@ -178,42 +207,33 @@ class RunModel(object):
         print('original feature number:  {}'.format(X_train.shape[1]))
         
         # drop_outliers()
-        if outliers_th:
+        if self.outliers_th:
             for col in X_train.columns:
-                X_train[col] = outliers.drop_outliers(X_train[col].values, X_train[col].values, alpha = outliers_th) 
-                if len(dftest): X_test[col] = outliers.drop_outliers(X_train[col].values,X_test[col].values, alpha = outliers_th)  
+                X_train[col] = outliers.drop_outliers(X_train[col].values, X_train[col].values, alpha = self.outliers_th) 
+                if len(dftest): X_test[col] = outliers.drop_outliers(X_train[col].values,X_test[col].values, alpha = self.outliers_th)  
                     
         # dropfeature()
-        X_train, X_test = dropfeature.drop_feature(X_train,y_train,X_test,coverage_threshold = coverage_th, 
-                          ks_threshold = ks_th) 
+        X_train, X_test = dropfeature.drop_feature(X_train,y_train,X_test,coverage_threshold = self.coverage_th, 
+                          ks_threshold = self.ks_th) 
         
         print('feature number remain after dropfeature:  {}'.format(X_train.shape[1]))
         
         
         # fillnan()
-        if fillna_method:
-            X_train, X_test = fillnan.fill_nan(X_train,y_train,X_test,method = fillna_method)
+        if self.fillna_method:
+            X_train, X_test = fillnan.fill_nan(X_train,y_train,X_test,method = self.fillna_method)
         
         print('feature number increased to after fill_na:  {}'.format(X_train.shape[1]))
         nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print('\n================================================================================ %s\n'%nowtime)
         
         # scalefeature()
-        if scale_method:
-            X_train, X_test  = scalefeature.scale_feature(X_train,X_test,method = scale_method)
+        if self.scale_method:
+            X_train, X_test  = scalefeature.scale_feature(X_train,X_test,method = self.scale_method)
         
-        
-        # 预处理后的测试和验证集
-        self.X_train,self.y_train = X_train,y_train
-        self.X_test,self.y_test  = X_test,y_test
-        
-        # 特征重要性
-        self.dfimportances = {} 
-        
-        # 报告信息
-        self.report_info = ''
-        
-        
+        return(X_train,y_train,X_test,y_test)
+    
+            
     def train_lr(self, cv = 5, model_idx = 1):
         
         lr = linear_model.LogisticRegressionCV()
@@ -469,11 +489,30 @@ class RunModel(object):
             
         return(clf)
         
-    def test(self,clf):
+    def test(self,clf,dftest = pd.DataFrame()):
         
-        info = "\nstart test model ... \n"
+        info = "\nstart test model ... "
         print(info)
         self.report_info = self.report_info + info + '\n'
+        
+        # 若传入新的dftest，则需要再次做数据预处理
+        if len(dftest)>0:
+            
+            print('preprocessing test data...\n')
+            
+            # 禁止数据预处理期间打印输出
+            stdout = sys.stdout
+            sys.stdout = open(os.devnull, 'w')
+            
+            X_train,y_train,X_test,y_test = self.preprocess_data(self.dftrain,dftest)
+            
+            # 恢复打印输出
+            sys.stdout = stdout
+            
+            # 预处理后的训练和测试集
+            self.X_train,self.y_train = X_train,y_train
+            self.X_test,self.y_test  = X_test,y_test
+            
         
         y_test_hat = clf.predict_proba(self.X_test)[:,-1]
         dfks_test = ks.ks_analysis(y_test_hat,np.ravel(self.y_test))
