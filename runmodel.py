@@ -29,6 +29,29 @@ try:
     from lightgbm import LGBMClassifier
 except:
     print("Warning: can't use lightgbm!",file = sys.stderr)
+    
+    
+def stratified_kfold(data,label,nfolds = 5):
+
+    label = np.array(label)
+    assert len(data) == len(label), 'the length of data and label not match!'
+    assert set(label) == {0,1}, 'label can only be 0 or 1!'
+    
+    index = np.arange(len(label))
+    index_0 = index[label<0.5].copy()
+    index_1 = index[label>0.5].copy()
+    np.random.shuffle(index_0)
+    np.random.shuffle(index_1)
+    
+    split_points_0 = (len(index_0) * np.arange(1,nfolds))//nfolds
+    split_points_1 = (len(index_1) * np.arange(1,nfolds))//nfolds
+    split_index_0_list = np.split(index_0,split_points_0)
+    split_index_1_list = np.split(index_1,split_points_1)
+    split_index_list = [np.concatenate((x,y)) for x,y in 
+                     zip(split_index_0_list,split_index_1_list)]
+    
+    result = [(np.setdiff1d(index,x),x) for x in split_index_list]
+    return result
 
 
 class RunModel(object):
@@ -402,25 +425,6 @@ class RunModel(object):
         dfimportance['feature'] = [self.__feature_dict.get(x,x) for x in dfimportance['feature']]
         self.dfimportances['lgbm'] = dfimportance
         return clf
-    
-    def stratified_kfold(data,label,nfolds = 5):
-        
-        label = np.array(label)
-        assert len(X) == len(label), 'the length of data and label not match!'
-        assert set(label) == {0,1}, 'label can only be 0 or 1!'
-        index = np.arange(len(label))
-        index_0 = index[label<0.5].copy()
-        index_1 = index[label>0.5].copy()
-        np.random.shuffle(index_0)
-        np.random.shuffle(index_1)
-        split_points_0 = (len(index_0) * np.arange(1,nfolds))//nfolds
-        split_points_1 = (len(index_1) * np.arange(1,nfolds))//nfolds
-        split_index_0_list = np.split(index_0,split_points_0)
-        split_index_1_list = np.split(index_1,split_points_1)
-        split_index_list = [np.concatenate((x,y)) for x,y in 
-                         zip(split_index_0_list,split_index_1_list)]
-        result = [(np.setdiff1d(index,x),x) for x in split_index_list]
-        return result
     
     def train(self,clf,cv = 5,model_idx = 5):
         
