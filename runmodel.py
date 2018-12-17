@@ -83,7 +83,7 @@ class RunModel(object):
 
     # 训练随机森林模型
     from tianjikit.runmodel import RunModel
-    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0,
+    model = RunModel(dftrain = dftrain,dftest = dftest, coverage_th=0.1, ks_th=0,
             outliers_th=None, fillna_method='most', scale_method=None,selected_features=None)
     rf = model.train_rf(cv=5, model_idx=5,
           n_estimators=100, max_depth=10, min_samples_split=2,
