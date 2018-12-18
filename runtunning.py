@@ -98,7 +98,7 @@ def main(dftrain,dftest,outputdir = './aa_tunning_results',
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('\n================================================================================ %s'%nowtime)
     print('step1: tune n_estimators for relatively high learning_rate...')
-    tune.gridsearch_cv(params_test1,cv = 5)
+    tune.gridsearch_cv(params_test1,cv = 5,verbose_eval = True)
     
     # step2：
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -111,7 +111,7 @@ def main(dftrain,dftest,outputdir = './aa_tunning_results',
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('\n================================================================================ %s'%nowtime)
     print('step3: tune gamma...')
-    tune.gridsearch_cv(param_test3,cv = 5)
+    tune.gridsearch_cv(params_test3,cv = 5)
     
     
     # step4：
