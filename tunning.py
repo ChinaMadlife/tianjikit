@@ -1,28 +1,47 @@
 # -*- coding:utf-8 -*-
 #!/usr/bin/python2.7
 ###########################################################
-#update_dt:2018-10-15
+#update_dt:2018-12-17
 #author:liangyun
-#usage: 超参数调试，主要针对xgboost
+#usage: 超参数调试，只针对xgboost
 ###########################################################
-
-from __future__ import print_function
-import numpy as np
-import pandas as pd
+from __future__ import print_function 
+import sys,os,json,datetime
+import numpy as np 
+import pandas as pd 
 from scipy import stats
-from copy import deepcopy
+import xgboost as xgb
+import pdb 
 
-from sklearn import datasets
-from sklearn import metrics
-from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import GridSearchCV
+# 初始化参数
+params_dict = dict()
 
-import xgboost
-from xgboost.sklearn import XGBClassifier
+# 以下为待调整参数
+# booster参数
+params_dict['learning_rate'] = 0.5        # 学习率，初始值为 0.1，通常越小越好。
+params_dict['n_estimators'] = 150         # 加法模型树的数量，初始值为50。
 
-#import pdb
-#__DEBUG__ = False
+# tree参数
+params_dict['max_depth'] = 3              # 树的深度，通常取值在[3,10]之间，初始值常取[3,6]之间
+params_dict['min_child_weight']= 10       # 最小叶子节点样本权重和，越大模型越保守。
+params_dict['gamma']= 0                   # 节点分裂所需的最小损失函数下降值，越大模型越保守。
+params_dict['subsample']= 0.8             # 横向采样，样本采样比例，通常取值在 [0.5，1]之间 
+params_dict['colsample_bytree'] = 1.0     # 纵向采样，特征采样比例，通常取值在 [0.5，1]之间 
+
+# regulazation参数 
+# Omega(f) = gamma*T + reg_alpha* sum(abs(wj)) + reg_lambda* sum(wj**2)  
+
+params_dict['reg_alpha'] = 0              #L1 正则化项的权重系数，越大模型越保守，通常取值在[0,1]之间。
+params_dict['reg_lambda'] = 1             #L2 正则化项的权重系数，越大模型越保守，通常取值在[1,100]之间。
+
+# 以下参数通常不需要调整
+params_dict['objective'] = 'binary:logistic'
+params_dict['tree_method'] = 'hist'       # 构建树的策略,可以是auto, exact, approx, hist
+params_dict['eval_metric'] =  'auc'
+params_dict['silent'] = 1
+params_dict['scale_pos_weight'] = 1        #不平衡样本时设定为正值可以使算法更快收敛。
+params_dict['seed'] = 0
+
 
 # 定义ks评分指标,供用户调用
 def ks(label,feature):
@@ -38,16 +57,6 @@ def ks_feval(preds,xgbtrain):
     ks_value = ks(label,preds)
     return 'ks',ks_value
 
-# 定义ks评分指标,供GridSearchCV函数的scoring调用
-def ks_scoring(estimater, X, y):
-    preds = estimater.predict_proba(X)[:,1]
-    ks_value = ks(y,preds)
-    return ks_value
-
-scoring_dict = {'auc':'roc_auc','ks':ks_scoring}
-feval_dict = {'auc':None,'ks':ks_feval}
-score_dict = {'auc':roc_auc_score,'ks':ks}
-
 # 美化dataframe输出
 from prettytable import PrettyTable
 def pretty_dataframe(df):
@@ -56,278 +65,281 @@ def pretty_dataframe(df):
         table.add_row(row)
     return table
 
-params_dict = dict()
+# 自定义分层KFold交叉验证
+def stratified_kfold(data,label,nfolds = 5): 
+    
+    label = np.array(label)
+    assert len(data) == len(label), 'the length of data and label not match!'
+    assert set(label) == {0,1}, 'label can only be 0 or 1!'
+    index = np.arange(len(label))
+    index_0 = index[label<0.5].copy()
+    index_1 = index[label>0.5].copy()
+    np.random.shuffle(index_0)
+    np.random.shuffle(index_1)
+    split_points_0 = (len(index_0) * np.arange(1,nfolds))//nfolds
+    split_points_1 = (len(index_1) * np.arange(1,nfolds))//nfolds
+    split_index_0_list = np.split(index_0,split_points_0)
+    split_index_1_list = np.split(index_1,split_points_1)
+    split_index_list = [np.concatenate((x,y)) for x,y in 
+                     zip(split_index_0_list,split_index_1_list)]
+    result = [(np.setdiff1d(index,x),x) for x in split_index_list] 
+    return result
 
-# 以下为待调整参数
-# booster参数
-params_dict['learning_rate'] = 0.1        # 学习率，初始值为 0.1，通常越小越好。
-params_dict['n_estimators'] = 50         # 加法模型树的数量，初始值为50，通常通过模型cv确认。
+# 训练xgb模型
+def train_xgb(params_dict,dtrain,dvalid,dtest = None):
+    
+    result = {}
+    bst = xgb.train(params = params_dict, dtrain = dtrain, 
+                    num_boost_round = params_dict.get('n_estimators',100), 
+                    feval = ks_feval,
+                    evals = [(dtrain, 'train'),(dvalid,'valid'),(dtest, 'test')] if dtest is not None else \
+                    [(dtrain, 'train'),(dvalid,'valid')], 
+                    evals_result = result)
+    dfresult = pd.DataFrame({(dataset+'_'+feval): result[dataset][feval] 
+               for dataset in ('train','valid','test') for feval in ('auc','ks')})
+    
+    return bst,dfresult
 
-# tree参数
-params_dict['max_depth'] = 3              # 树的深度，通常取值在[3,10]之间，初始值常取[3,6]之间
-params_dict['min_child_weight']= 10         # 最小叶子节点样本权重和，越大模型越保守。
-params_dict['gamma']= 0                   # 节点分裂所需的最小损失函数下降值，越大模型越保守。
-params_dict['subsample']= 0.8             # 横向采样，样本采样比例，通常取值在 [0.5，1]之间 
-params_dict['colsample_bytree'] = 0.8     # 纵向采样，特征采样比例，通常取值在 [0.5，1]之间 
+# 构造参数网格
+params_items = []
+def params_grid(params):  
+    
+    global params_items
+    params_items = [[(k,v) for v in values]  for k,values in params.items()]    
+    itemstr = '('+','.join(['p%d'%i  for i in  range(len(params_items))]) + ',)' 
+    forstr = ' '.join(['for p%d in params_items[%d]'%(i,i) for i in range(len(params_items))])
+    items_grid = '[' + itemstr + ' ' + forstr + ']'
+    
+    result = [dict(x) for x in eval(items_grid)]   
+    return(result)
 
-# regulazation参数 
-# Omega(f) = gamma*T + reg_alpha* sum(abs(wj)) + reg_lambda* sum(wj**2)  
-
-params_dict['reg_alpha'] = 0              #L1 正则化项的权重系数，越大模型越保守，通常取值在[0,1]之间。
-params_dict['reg_lambda'] = 1             #L2 正则化项的权重系数，越大模型越保守，通常取值在[1,100]之间。
-
-# 以下参数通常不需要调整
-params_dict['objective'] = 'binary:logistic'
-params_dict['n_jobs'] = -1
-params_dict['scale_pos_weight'] = 1        #不平衡样本时设定为正值可以使算法更快收敛。
-params_dict['seed'] = 0
-
-
+# 调参主类
 class Tunning(object):
-    """  
+    """ 
     Examples:
     --------
     from __future__ import print_function
     import numpy as np
     import pandas as pd
-    import xgboost
     from sklearn import datasets
     from sklearn.model_selection import train_test_split
-    from xgboost.sklearn import XGBClassifier
-
     from tianjikit.tunning import Tunning
-
+    
     data,label = datasets.make_classification(n_samples= 10000, n_features=20, n_informative= 6 ,
                  n_classes=2, n_clusters_per_class=10,random_state=0)
     dfdata = pd.DataFrame(data,columns = [u'f'+str(i) for i in range(data.shape[1])])
     dfdata['label'] = label
     dftrain,dftest = train_test_split(dfdata)
     
+    # 构造初始化参数
     params_dict = dict()
-
     # 以下为待调整参数
     # booster参数
     params_dict['learning_rate'] = 0.1        # 学习率，初始值为 0.1，通常越小越好。
-    params_dict['n_estimators'] = 50          # 加法模型树的数量，初始值为50，通常通过xgboost自带模型cv确认。
-
+    params_dict['n_estimators'] = 150         # 加法模型树的数量，初始值为50，通常通过模型cv确认。
     # tree参数
     params_dict['max_depth'] = 3              # 树的深度，通常取值在[3,10]之间，初始值常取[3,6]之间
     params_dict['min_child_weight']=10        # 最小叶子节点样本权重和，越大模型越保守。
     params_dict['gamma']= 0                   # 节点分裂所需的最小损失函数下降值，越大模型越保守。
     params_dict['subsample']= 0.8             # 横向采样，样本采样比例，通常取值在 [0.5，1]之间 
-    params_dict['colsample_bytree'] = 0.8     # 纵向采样，特征采样比例，通常取值在 [0.5，1]之间 
-
+    params_dict['colsample_bytree'] = 1.0     # 纵向采样，特征采样比例，通常取值在 [0.5，1]之间 
     # regulazation参数 
     # Omega(f) = gamma*T + reg_alpha* sum(abs(wj)) + reg_lambda* sum(wj**2) 
     params_dict['reg_alpha'] = 0              #L1 正则化项的权重系数，越大模型越保守，通常取值在[0,1]之间。
     params_dict['reg_lambda'] = 1             #L2 正则化项的权重系数，越大模型越保守，通常取值在[1,100]之间。
-
     # 以下参数通常不需要调整
     params_dict['objective'] = 'binary:logistic'
-    params_dict['n_jobs'] = 4                 #此 n_jobs为xgboost多线程参数，与GridSearchCV中的n_jobs不同。
+    params_dict['tree_method'] = 'hist'       # 构建树的策略,可以是auto, exact, approx, hist
+    params_dict['eval_metric'] =  'auc'
+    params_dict['silent'] = 1
     params_dict['scale_pos_weight'] = 1       #不平衡样本时设定为正值可以使算法更快收敛。
     params_dict['seed'] = 0
     
     # step0: 初始化
-    model = XGBClassifier()
-    tune = Tunning(model=model,dftrain=dftrain,dftest=dftest,cv = 5,score_func = 'ks',
-           score_gap_limit = 0.05,params_dict=params_dict,n_jobs=4,selected_features=None)
-    tune.dfscore
+    tune = Tunning(dftrain,dftest,score_func = 'ks',score_gap_limit = 0.05,params_dict=params_dict,n_jobs=4)
     
     # step1: tune n_estimators for relatively high learning_rate (eg: 0.1)
-    param_test1 = { 'learning_rate': 0.1, 'n_estimators':1000}
-    tune.params_dict.update(param_test1)
-    tune.model.set_params(**tune.params_dict)
-    tune.xgboost_cv(cv= 5, early_stopping_rounds= 100,n_jobs = 4,seed = 0)
-    tune.dfscore
+    params_test1 = { 'learning_rate': [0.1,0.09],'n_estimators':[150]}
+    tune.gridsearch_cv(params_test1,cv = 5)
     
     # step2：tune max_depth & min_child_weight 
-    param_test2 = { 'max_depth': [3,4,5,6,7], 'min_child_weight': [1,10,20,30,40,50] } 
-    best_param = tune.gridsearch_cv(param_test2,n_jobs = -1)
-    tune.dfscore
+    params_test2 = { 'max_depth': [3,4], 'min_child_weight': [10,30,50,100,120] } 
+    tune.gridsearch_cv(params_test2,cv = 5)
+    
     
     # step3：tune gamma
-    param_test3 = {'gamma': [0,0.1,0.2,0.3,0.4,0.5]]}
-    best_param = tune.gridsearch_cv(param_test3,n_jobs = -1)
-    tune.dfscore
+    params_test3 = {'gamma': [0,0.1,0.5,1,10]}
+    tune.gridsearch_cv(param_test3,cv = 5)
+    
     
     # step4：tune subsample & colsample_bytree 
-    param_test4 = { 'subsample': [0.6,0.7,0.8,0.9,1],
+    params_test4 = { 'subsample': [0.6,0.7,0.8,0.9,1],
                    'colsample_bytree': [0.6,0.7,0.8,0.9,1] } 
-    best_param = tune.gridsearch_cv(param_test4,n_jobs = -1)
-    tune.dfscore
+    tune.gridsearch_cv(params_test4,cv = 5)
+    
     
     # step5: tune reg_alpha 
-    param_test5 = { 'reg_alpha': [0, 0.01, 0.1, 1, 10, 100] } 
-    best_param = tune.gridsearch_cv(param_test5,n_jobs = -1)
-    tune.dfscore
+    params_test5 = { 'reg_alpha': [0,  0.1, 1, 10, 100] } 
+    tune.gridsearch_cv(params_test5,cv = 5)
+   
     
     # step6: tune reg_lambda 
-    param_test6 = { 'reg_lambda': [0, 0.01, 0.1, 1, 10, 100] }
-    best_param = tune.gridsearch_cv(param_test6,n_jobs = -1)
-    tune.dfscore
+    params_test6 = { 'reg_lambda': [0,  0.1, 1, 10, 100] }
+    tune.gridsearch_cv(params_test6,cv = 5)
+    
     
     # step7: lower learning_rate and rise n_estimators
-    param_test7 = { 'learning_rate': 0.01, 'n_estimators':1000}
-    tune.params_dict.update(param_test7)
-    tune.model.set_params(**tune.params_dict)
-    tune.xgboost_cv(cv= 5, early_stopping_rounds= 100,n_jobs = -1)
-    tune.dfscore 
+    params_test7 = { 'learning_rate':[0.05,0.02], 'n_estimators':[300]}
+    tune.gridsearch_cv(params_test7,cv = 5)
     
     """
     
-    def __init__(self, model, dftrain, dftest, params_dict = params_dict, n_jobs = -1, cv = 5, 
-                 score_func = 'ks',score_gap_limit = 0.05,selected_features = None):
+    def __init__(self,dftrain,dftest,score_func = 'ks',score_gap_limit = 0.05,params_dict = params_dict,n_jobs = 4):
         
-        self.model,self.__score_func,self.score_gap_limit = model,score_func,score_gap_limit
-        self.dftrain,self.dftest = dftrain,dftest
+        # 校验是否有label列
+        assert 'label' in dftrain.columns, 'illegal input,there should be a  "label" column in dftrain!'
         
-        # self.params_dict存储最新的特征
-        self.params_dict = params_dict.copy()
-        self.model.set_params(**params_dict)
+        # 校验label列的合法性
+        assert set(dftrain['label']) == {0,1},'illegal label values,label can only be 0 or 1!'
         
-        
-        # self.dfscore存储全部得分记录，self.dfparams存储全部参数记录
-        self.dfscore = pd.DataFrame(columns = ['model_id','train_score','validate_score','score_gap','test_score'] + 
-                     ['learning_rate','n_estimators','max_depth','min_child_weight','gamma','subsample','colsample_bytree','reg_alpha','reg_lambda'])
-        
-        self.dfparams = pd.DataFrame(columns = ['model_id','params_dict'])
-        
-        # 去掉['phone','id','idcard','id_card','loan_dt','name','id_map']等非特征列
-        for  col in ['name','phone','id','id-card','idcard','id_card','loan_dt','id_map','idmap','id-map']:
-            if col in self.dftrain.columns:
-                self.dftrain = self.dftrain.drop([col],axis = 1)
-                self.dftest = self.dftest.drop([col],axis = 1)
-                
-        # 如果selected_features 不为空，则进行特征筛选
-        if selected_features:
-            remained_cols = [col for col in self.dftrain.columns if col in selected_features + ['label']]
-            self.dftrain = self.dftrain[remained_cols]
-            self.dftest = self.dftest[remained_cols]
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s'%nowtime)
+        print('train set size: %d'%len(dftrain))
+        print('test set size: %d'%len(dftest))
+        print('score func: %s'%score_func)
+        print('score gap limit: %f'%score_gap_limit)
+        print('n_jobs: %d'%n_jobs)
+
+         # 去掉['phone','id','idcard','id_card','loan_dt','name','id_map']等非特征列
+        for  col in {'phone','id','unique_id','uniq_id','idcard','id-card','id_card','name','loan_dt','idmap','id_map','id-map'}:
+            if col in dftrain.columns:
+                dftrain = dftrain.drop(col,axis = 1)
+                if len(dftest):dftest = dftest.drop(col,axis = 1)
+                    
+        # 校验是否存在非数值列 
+        try:
+            assert not np.dtype('O') in dftrain.dtypes.values
+        except:
+            object_cols = dftrain.columns[dftrain.dtypes == np.object].tolist()
+            print('removed feature columns not numerical: %s'%(','.join(map(str,object_cols))),file = sys.stderr)
+            dftrain = dftrain.drop(object_cols,axis = 1)
+            if len(dftest):dftest = dftest.drop(object_cols,axis = 1)
                 
         # 制作特征名称映射表并更改特征名，复杂的特征名可能导致xgboost出错
-        self.__feature_dict = {'feature'+ str(i): name for i,name in enumerate(self.dftrain.columns.drop('label'))}
+        self.__feature_dict = {'feature'+ str(i): name for i,name in enumerate(dftrain.columns.drop('label'))}
         self.__inverse_feature_dict = dict(zip(self.__feature_dict.values(),self.__feature_dict.keys()))
-        self.dftrain.columns = [self.__inverse_feature_dict.get(x,x) for x in self.dftrain.columns]
-        self.dftest.columns = [self.__inverse_feature_dict.get(x,x) for x in self.dftest.columns]
-                    
+        dftrain.columns = [self.__inverse_feature_dict.get(x,x) for x in dftrain.columns]
+        dftest.columns = [self.__inverse_feature_dict.get(x,x) for x in dftest.columns]
+        
         # 分割feature和label
-        self.X_train = self.dftrain.drop(['label'],axis = 1)
-        self.y_train = self.dftrain[['label']]
-        self.X_test = self.dftest.drop(['label'],axis = 1) 
-        self.y_test = self.dftest[['label']]
+        X_train = dftrain.drop(['label'],axis = 1)
+        y_train = dftrain['label']
+        X_test = dftest.drop(['label'],axis = 1)
+        y_test = dftest['label'] 
         
-        # 计算初始得分
-        test_param = {'n_estimators':[self.model.get_params()['n_estimators']]}
-        gsearch = GridSearchCV(estimator=self.model, param_grid= test_param, 
-                       scoring= scoring_dict[self.__score_func], n_jobs= n_jobs, iid=False, cv=cv,
-                       return_train_score=True) 
-        gsearch.fit(self.X_train, np.ravel(self.y_train)) 
-        dfcv_results = pd.DataFrame(gsearch.cv_results_)
-        dfcv_simple = dfcv_results[['params','mean_train_score','mean_test_score']]
-        train_score,validate_score = dfcv_simple.loc[0,['mean_train_score','mean_test_score']]
-        score_gap = train_score - validate_score
-        test_score = score_dict[self.__score_func](np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
+        X_train.index = range(len(X_train))
+        y_train.index = range(len(X_train))
+        X_test.index = range(len(X_test)) 
+        y_test.index = range(len(X_test))
         
-        # 录入初始得分和初始参数
-        dic_score = {'model_id':0,'train_score':train_score,
-                     'score_gap':score_gap,'validate_score':validate_score,'test_score':test_score}
-        dic_score.update(self.params_dict)
-        i = len(self.dfscore)
-        self.dfscore.loc[i,:] = deepcopy(dic_score)
-        self.dfparams.loc[i] = {'model_id':i,'params_dict':self.params_dict.copy()}
+        # 预处理后的训练和验证集
+        self.X_train,self.y_train = X_train,y_train
+        self.X_test,self.y_test  = X_test,y_test
         
-    def xgboost_cv(self, early_stopping_rounds=50, cv = 5, n_jobs=4, seed=0):
+        # self.params_dict 存储当前参数，self.dfscores存储历史得分记录，self.dfparams存储历史参数记录,
+        # self.dfmerge是dfscores和dfparams的合并
+        self.params_dict = params_dict.copy()
+        self.params_dict['nthread'] = n_jobs
         
-        xgb_param = self.model.get_xgb_params() 
-        xgtrain = xgboost.DMatrix(self.X_train, label= self.y_train) 
-        cvresult = xgboost.cv(xgb_param, xgtrain, num_boost_round = self.model.get_params()['n_estimators'],
-                          nfold=cv, metrics='auc',feval= feval_dict[self.__score_func], seed=seed, 
-                          callbacks=[xgboost.callback.early_stop(early_stopping_rounds, maximize = True)])
+        self.dfmerge = pd.DataFrame(columns = ['model_id','train_score','validate_score','score_gap','test_score'] + 
+           ['learning_rate','n_estimators','max_depth','min_child_weight','gamma','subsample','colsample_bytree','reg_alpha','reg_lambda'])
+        self.dfscores = pd.DataFrame(columns = ['model_id','train_score','validate_score','score_gap','test_score'])
+        self.dfparams = pd.DataFrame(columns = ['model_id','learning_rate','n_estimators','max_depth','min_child_weight',
+                                       'gamma','subsample','colsample_bytree','reg_alpha','reg_lambda'])
         
-        # 在score_gap < score_gap_limit条件下找到test_score最大时的n_estimators
-        cvresult['score_gap'] =  cvresult['train-{}-mean'.format(self.__score_func)] - \
-                                 cvresult['test-{}-mean'.format(self.__score_func)]
-        cvresult_filter = cvresult.loc[cvresult['score_gap']<=self.score_gap_limit].copy()
+        self.score_func = score_func
+        self.score_gap_limit = score_gap_limit
         
+    def model_cv(self,params_dict,cv = 5):
         
-        if len(cvresult_filter)<1:
-            cvresult_filter = pd.DataFrame(cvresult.loc[cvresult['score_gap'].idxmin(),:]).T
-        num_round_best = cvresult_filter['test-{}-mean'.format(self.__score_func)].astype('f4').idxmax()
-        print('Best n_estimators considered score_gap_limit: ', num_round_best) 
-        self.params_dict.update({'n_estimators':num_round_best})
+        kfold_indexes = stratified_kfold(self.X_train,self.y_train,nfolds = cv)
+        dfresults_list = [np.nan]*cv
+        dtest = xgb.DMatrix(self.X_test,self.y_test)
+        train_score = 'train_' + self.score_func 
+        valid_score = 'valid_' + self.score_func
+        test_score = 'test_' + self.score_func
+        for i in range(cv):
+            nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            print('\n================================================================================ %s'%nowtime)
+            print('k = %d'%(i+1))
+            train_index,valid_index = kfold_indexes[i]
+            dtrain = xgb.DMatrix(self.X_train.iloc[train_index,:],self.y_train.iloc[train_index])
+            dvalid = xgb.DMatrix(self.X_train.iloc[valid_index,:],self.y_train.iloc[valid_index])
+            bst,dfresults_list[i] = train_xgb(params_dict,dtrain,dvalid,dtest)
+            dfresults_list[i]['train_valid_gap'] =  dfresults_list[i][train_score] - dfresults_list[i][valid_score]
+            
+        def npmean(*d):
+            s = d[0]
+            for di in d[1:]:
+                s = s + di
+            s = s/float(len(d))
+            return(s)    
         
-        # 计算更新n_estimators后的得分
-        self.model = self.model.set_params(**self.params_dict)
-        test_param = {'n_estimators':[num_round_best]}
-        gsearch = GridSearchCV(estimator=self.model, param_grid= test_param, 
-                       scoring=scoring_dict[self.__score_func], n_jobs=n_jobs, iid=False, cv=cv,
-                       return_train_score=True) 
-        gsearch.fit(self.X_train, np.ravel(self.y_train)) 
+        dfmean = npmean(*dfresults_list)
         
-        dfcv_results = pd.DataFrame(gsearch.cv_results_)
-        dfcv_simple = dfcv_results[['params','mean_train_score','mean_test_score']].copy()
-        train_score,validate_score = dfcv_simple.loc[0,['mean_train_score','mean_test_score']]
-        score_gap = train_score - validate_score
-        test_score = score_dict[self.__score_func](np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
+        dfmean['n_estimators'] = range(1,len(dfmean)+1)
+        dfans = dfmean.query('train_valid_gap < {}'.format(self.score_gap_limit))
+        if len(dfans) <1: 
+            dfans = dfmean.iloc[[np.argmin(dfmean['train_valid_gap'].values)],:]
         
-        #if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
+        dic = dict(dfans.iloc[np.argmax(dfans[valid_score].values),:])
+        ans_dict = params_dict.copy()
+        ans_dict.update({'n_estimators':dic['n_estimators'],'train_score':dic[train_score],
+                         'validate_score':dic[valid_score],'test_score':dic[test_score],
+                         'score_gap':dic['train_valid_gap']})
+        return ans_dict
+    
+    def gridsearch_cv(self,params_test,cv = 5):
         
-        # 录入得分和参数
-        i = len(self.dfscore)
-        dic_score = {'model_id':i,'train_score':train_score,'validate_score':validate_score,
-                     'score_gap':score_gap,'test_score':test_score}
-        dic_score.update(self.params_dict)
-        self.dfscore.loc[i,:] = deepcopy(dic_score)
-        self.dfparams.loc[i] = {'model_id':i,'params_dict':self.params_dict.copy()}
+        test_params_grid = params_grid(params_test)
+        params_dict = self.params_dict.copy()
         
-        return(num_round_best)
+        for d in test_params_grid:
+            nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            print('\n================================================================================ %s'%nowtime)
+            print(d)
+            params_dict.update(d)
+            ans_dict = self.model_cv(params_dict,cv)
+            dic_merge = ans_dict.copy()
+            m = len(self.dfmerge)
+            dic_merge.update({'model_id':m})
+            self.dfmerge.loc[m,:] = dic_merge 
+            self.dfscores.loc[m,:] = dic_merge
+            self.dfparams.loc[m,:] = dic_merge
+            
+        df_filter = self.dfscores.query('score_gap < {}'.format(self.score_gap_limit))
+        dfscore_best = df_filter.iloc[[np.argmax(df_filter['validate_score'].values)],:]
+        dfparams_best = self.dfparams.query('model_id == {}'.format(dfscore_best['model_id'].values[0]))
         
-        
-    def gridsearch_cv(self, test_param, cv=5, n_jobs=4): 
-        
-        gsearch = GridSearchCV(estimator = self.model, param_grid=test_param, 
-                               scoring = scoring_dict[self.__score_func], n_jobs= n_jobs, iid=False, cv=cv,
-                               return_train_score=True) 
-        gsearch.fit(self.X_train, np.ravel(self.y_train)) 
-        dfcv_results = pd.DataFrame(gsearch.cv_results_)
-        dfcv_simple = dfcv_results[['params','mean_train_score','mean_test_score']].copy()
-        
-        # 在score_gap < score_gap_limit条件下找到test_score最大时的n_estimators
-        dfcv_simple['score_gap'] = dfcv_simple['mean_train_score'] - dfcv_simple['mean_test_score']
-        dfcv_simple_filter = dfcv_simple.query('score_gap < {}'.format(self.score_gap_limit)).copy()
-        if len(dfcv_simple_filter)<1:
-            dfcv_simple_filter = pd.DataFrame(dfcv_simple.loc[dfcv_simple['score_gap'].idxmin(),:]).T
-        best_id = dfcv_simple_filter['mean_test_score'].astype('f4').idxmax()
-        best_params = dfcv_simple.loc[best_id,'params'].copy()
-        best_score = dfcv_simple.loc[best_id,'mean_test_score']
-        
-        print('CV results: ')
-        print(pretty_dataframe(dfcv_simple))
-        print('Best params this step: ')
-        print(best_params) 
-        print('Best score this step: ')
-        print(best_score) 
-        
-        # 计算更新参数后的得分
+        # 更新最优参数至当前参数
+        best_params = dict(dfparams_best.iloc[0,:])
+        best_params.pop('model_id')
+        best_params.pop('n_estimators')
         self.params_dict.update(best_params)
-        self.model = self.model.set_params(**self.params_dict)
-        train_score,validate_score,score_gap = dfcv_simple.loc[best_id,['mean_train_score','mean_test_score','score_gap']]
-        test_score = score_dict[self.__score_func](np.ravel(self.y_test),gsearch.predict_proba(self.X_test)[:,1])
         
-        #if __DEBUG__: pdb.set_trace()##********************调试断点***********************##
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s'%nowtime)
+        print('Tested params:')
+        print(pretty_dataframe(self.dfparams))
+        print('Tested scores:')
+        print(pretty_dataframe(self.dfscores))
+        print('Best params so far:')
+        print(pretty_dataframe(dfparams_best)) 
+        print('Best score so far:')
+        print(pretty_dataframe(dfscore_best)) 
         
-        # 录入得分和参数
-        i = len(self.dfscore)
-        dic_score = {'model_id':i,'train_score':train_score,'validate_score':validate_score,
-                     'score_gap':score_gap,'test_score':test_score}
-        dic_score.update(self.params_dict)
-        self.dfscore.loc[i,:] = deepcopy(dic_score)
-        self.dfparams.loc[i] = {'model_id':i,'params_dict':self.params_dict.copy()}
-        
-        return(best_params)
-        
-        
+        return(dfscore_best)
+  
         
         
         
