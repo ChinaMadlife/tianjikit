@@ -86,12 +86,12 @@ def stratified_kfold(data,label,nfolds = 5):
     return result
 
 # 训练xgb模型
-def train_xgb(params_dict,dtrain,dvalid,dtest = None):
+def train_xgb(params_dict,dtrain,dvalid,dtest = None,verbose_eval = False):
     
     result = {}
     bst = xgb.train(params = params_dict, dtrain = dtrain, 
                     num_boost_round = params_dict.get('n_estimators',100), 
-                    feval = ks_feval,
+                    feval = ks_feval,verbose_eval= verbose_eval,
                     evals = [(dtrain, 'train'),(dvalid,'valid'),(dtest, 'test')] if dtest is not None else \
                     [(dtrain, 'train'),(dvalid,'valid')], 
                     evals_result = result)
@@ -160,7 +160,7 @@ class Tunning(object):
     
     # step1: tune n_estimators for relatively high learning_rate (eg: 0.1)
     params_test1 = { 'learning_rate': [0.1,0.09],'n_estimators':[150]}
-    tune.gridsearch_cv(params_test1,cv = 5)
+    tune.gridsearch_cv(params_test1,cv = 5,verbose_eval = True)
     
     # step2：tune max_depth & min_child_weight 
     params_test2 = { 'max_depth': [3,4], 'min_child_weight': [10,30,50,100,120] } 
@@ -169,7 +169,7 @@ class Tunning(object):
     
     # step3：tune gamma
     params_test3 = {'gamma': [0,0.1,0.5,1,10]}
-    tune.gridsearch_cv(param_test3,cv = 5)
+    tune.gridsearch_cv(params_test3,cv = 5)
     
     
     # step4：tune subsample & colsample_bytree 
@@ -260,7 +260,7 @@ class Tunning(object):
         self.score_func = score_func
         self.score_gap_limit = score_gap_limit
         
-    def model_cv(self,params_dict,cv = 5):
+    def model_cv(self,params_dict,cv = 5,verbose_eval = False):
         
         kfold_indexes = stratified_kfold(self.X_train,self.y_train,nfolds = cv)
         dfresults_list = [np.nan]*cv
@@ -275,7 +275,8 @@ class Tunning(object):
             train_index,valid_index = kfold_indexes[i]
             dtrain = xgb.DMatrix(self.X_train.iloc[train_index,:],self.y_train.iloc[train_index])
             dvalid = xgb.DMatrix(self.X_train.iloc[valid_index,:],self.y_train.iloc[valid_index])
-            bst,dfresults_list[i] = train_xgb(params_dict,dtrain,dvalid,dtest)
+            verbose = verbose_eval if i == 0 else False
+            bst,dfresults_list[i] = train_xgb(params_dict,dtrain,dvalid,dtest,verbose)
             dfresults_list[i]['train_valid_gap'] =  dfresults_list[i][train_score] - dfresults_list[i][valid_score]
             
         def npmean(*d):
@@ -299,7 +300,7 @@ class Tunning(object):
                          'score_gap':dic['train_valid_gap']})
         return ans_dict
     
-    def gridsearch_cv(self,params_test,cv = 5):
+    def gridsearch_cv(self,params_test,cv = 5,verbose_eval = False):
         
         test_params_grid = params_grid(params_test)
         params_dict = self.params_dict.copy()
@@ -309,7 +310,7 @@ class Tunning(object):
             print('\n================================================================================ %s'%nowtime)
             print(d)
             params_dict.update(d)
-            ans_dict = self.model_cv(params_dict,cv)
+            ans_dict = self.model_cv(params_dict,cv,verbose_eval)
             dic_merge = ans_dict.copy()
             m = len(self.dfmerge)
             dic_merge.update({'model_id':m})
