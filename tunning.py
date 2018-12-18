@@ -18,12 +18,12 @@ params_dict = dict()
 
 # 以下为待调整参数
 # booster参数
-params_dict['learning_rate'] = 0.5        # 学习率，初始值为 0.1，通常越小越好。
-params_dict['n_estimators'] = 150         # 加法模型树的数量，初始值为50。
+params_dict['learning_rate'] = 0.1       # 学习率，初始值为 0.1，通常越小越好。
+params_dict['n_estimators'] = 60         # 加法模型树的数量，初始值为50。
 
 # tree参数
 params_dict['max_depth'] = 3              # 树的深度，通常取值在[3,10]之间，初始值常取[3,6]之间
-params_dict['min_child_weight']= 10       # 最小叶子节点样本权重和，越大模型越保守。
+params_dict['min_child_weight']= 30       # 最小叶子节点样本权重和，越大模型越保守。
 params_dict['gamma']= 0                   # 节点分裂所需的最小损失函数下降值，越大模型越保守。
 params_dict['subsample']= 0.8             # 横向采样，样本采样比例，通常取值在 [0.5，1]之间 
 params_dict['colsample_bytree'] = 1.0     # 纵向采样，特征采样比例，通常取值在 [0.5，1]之间 
@@ -136,7 +136,7 @@ class Tunning(object):
     # 以下为待调整参数
     # booster参数
     params_dict['learning_rate'] = 0.1        # 学习率，初始值为 0.1，通常越小越好。
-    params_dict['n_estimators'] = 150         # 加法模型树的数量，初始值为50，通常通过模型cv确认。
+    params_dict['n_estimators'] = 60          # 加法模型树的数量，初始值为50，通常通过模型cv确认。
     # tree参数
     params_dict['max_depth'] = 3              # 树的深度，通常取值在[3,10]之间，初始值常取[3,6]之间
     params_dict['min_child_weight']=10        # 最小叶子节点样本权重和，越大模型越保守。
@@ -158,38 +158,37 @@ class Tunning(object):
     # step0: 初始化
     tune = Tunning(dftrain,dftest,score_func = 'ks',score_gap_limit = 0.05,params_dict=params_dict,n_jobs=4)
     
-    # step1: tune n_estimators for relatively high learning_rate (eg: 0.1)
-    params_test1 = { 'learning_rate': [0.1,0.09],'n_estimators':[150]}
+    # step1: tune n_estimators for relatively high learning_rate
+    params_test1 = {'learning_rate': [0.1],'n_estimators':[50]} 
     tune.gridsearch_cv(params_test1,cv = 5,verbose_eval = True)
     
     # step2：tune max_depth & min_child_weight 
-    params_test2 = { 'max_depth': [3,4], 'min_child_weight': [10,30,50,100,120] } 
+    params_test2 = { 'max_depth': [3], 'min_child_weight': [50,100,200] } 
     tune.gridsearch_cv(params_test2,cv = 5)
     
     
     # step3：tune gamma
-    params_test3 = {'gamma': [0,0.1,0.5,1,10]}
+    params_test3 = {'gamma': [0.1,0.5,1]}
     tune.gridsearch_cv(params_test3,cv = 5)
     
     
     # step4：tune subsample & colsample_bytree 
-    params_test4 = { 'subsample': [0.6,0.7,0.8,0.9,1],
-                   'colsample_bytree': [0.6,0.7,0.8,0.9,1] } 
+    params_test4 = { 'subsample': [0.9,1.0],'colsample_bytree': [1.0] } 
     tune.gridsearch_cv(params_test4,cv = 5)
     
     
     # step5: tune reg_alpha 
-    params_test5 = { 'reg_alpha': [0,  0.1, 1, 10, 100] } 
+    params_test5 = { 'reg_alpha': [0.1,1] } 
     tune.gridsearch_cv(params_test5,cv = 5)
    
     
     # step6: tune reg_lambda 
-    params_test6 = { 'reg_lambda': [0,  0.1, 1, 10, 100] }
+    params_test6 = { 'reg_lambda': [0,0.1] }
     tune.gridsearch_cv(params_test6,cv = 5)
     
     
     # step7: lower learning_rate and rise n_estimators
-    params_test7 = { 'learning_rate':[0.05,0.02], 'n_estimators':[300]}
+    params_test7 = { 'learning_rate':[0.08,0.09], 'n_estimators':[100]}
     tune.gridsearch_cv(params_test7,cv = 5)
     
     """
@@ -207,7 +206,7 @@ class Tunning(object):
         print('train set size: %d'%len(dftrain))
         print('test set size: %d'%len(dftest))
         print('score func: %s'%score_func)
-        print('score gap limit: %f'%score_gap_limit)
+        print('score gap limit: %s'%str(score_gap_limit))
         print('n_jobs: %d'%n_jobs)
 
          # 去掉['phone','id','idcard','id_card','loan_dt','name','id_map']等非特征列
@@ -288,7 +287,7 @@ class Tunning(object):
         
         dfmean = npmean(*dfresults_list)
         
-        dfmean['n_estimators'] = range(1,len(dfmean)+1)
+        dfmean['n_estimators'] = np.arange(1,len(dfmean)+1)
         dfans = dfmean.query('train_valid_gap < {}'.format(self.score_gap_limit))
         if len(dfans) <1: 
             dfans = dfmean.iloc[[np.argmin(dfmean['train_valid_gap'].values)],:]

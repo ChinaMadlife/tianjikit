@@ -9,7 +9,7 @@ from __future__ import print_function
 
 score_func = 'ks'  #优化评估指标，可以为 'ks'或'auc'
 score_gap_limit  = 0.05  #可接受train和validate最大评分差值gap
-n_jobs = 10  #并行任务数量
+n_jobs = 16  #并行任务数量
 
 #--------------------------------------------------------------------------------
 # 二，配置超参数初始值
@@ -19,12 +19,12 @@ params_dict = dict()
 
 # 以下为待调整参数
 # booster参数
-params_dict['learning_rate'] = 0.5        # 学习率，初始值为 0.1，通常越小越好。
-params_dict['n_estimators'] = 150         # 加法模型树的数量，初始值为50。
+params_dict['learning_rate'] = 0.1        # 学习率，初始值为 0.1，通常越小越好。
+params_dict['n_estimators'] = 50         # 加法模型树的数量，初始值为50。
 
 # tree参数
 params_dict['max_depth'] = 3              # 树的深度，通常取值在[3,10]之间，初始值常取[3,6]之间
-params_dict['min_child_weight']= 10       # 最小叶子节点样本权重和，越大模型越保守。
+params_dict['min_child_weight']= 30       # 最小叶子节点样本权重和，越大模型越保守。
 params_dict['gamma']= 0                   # 节点分裂所需的最小损失函数下降值，越大模型越保守。
 params_dict['subsample']= 0.8             # 横向采样，样本采样比例，通常取值在 [0.5，1]之间 
 params_dict['colsample_bytree'] = 1.0     # 纵向采样，特征采样比例，通常取值在 [0.5，1]之间 
@@ -46,19 +46,19 @@ params_dict['seed'] = 0
 #--------------------------------------------------------------------------------
 # 三，配置超参搜索范围
 
-params_test1 = {'learning_rate': [0.1,0.2]} #此处应配置较大 learning_rate
+params_test1 = {'learning_rate': [0.1],'n_estimators':[50]}  #此处应配置较大 learning_rate
 
-params_test2 = { 'max_depth': [3], 'min_child_weight': [10,30,50,100,200,300] } 
+params_test2 = { 'max_depth': [3], 'min_child_weight': [50,100,200] } 
 
-params_test3 = {'gamma': [0,0.1,0.5,1,10]}
+params_test3 = {'gamma': [0.1,0.5,1]}
 
-params_test4 = { 'subsample': [0.8,0.9,1],'colsample_bytree': [0.8,0.9,1] } 
+params_test4 = { 'subsample': [0.9,1.0],'colsample_bytree': [1.0] } 
 
-params_test5 = { 'reg_alpha': [0,0.1,1,10] } 
+params_test5 = { 'reg_alpha': [0.1,1] } 
 
-params_test6 = { 'reg_lambda': [0,0.1,1,10] }
+params_test6 = { 'reg_lambda': [0,0.1] }
 
-params_test7 = {'learning_rate':[0.05,0.09,0.08]} #此处应配置较小learning_rate
+params_test7 = {'learning_rate':[0.09,0.08],'n_estimators':[100]} #此处应配置较小learning_rate
 #===============================================================================
 
 
@@ -87,9 +87,9 @@ class numpyJsonEncoder(json.JSONEncoder):
         else: 
             return json.JSONEncoder.default(self, obj)
 
-def main(dftrain,dftest,outputdir = './aa_tunning_results',
+def main(dftrain,dftest,outputdir = './aa_tunning_results',n_jobs = n_jobs,
          score_func = score_func, score_gap_limit = score_gap_limit,
-         params_dict = params_dict,n_jobs = n_jobs):
+         params_dict = params_dict):
     
     # step0: 初始化
     tune = Tunning(dftrain,dftest,score_func = score_func,score_gap_limit = score_gap_limit, params_dict=params_dict,n_jobs=n_jobs)
@@ -170,7 +170,7 @@ if __name__ == '__main__':
         outputdir = sys.argv[3]
     else:
         outputdir = './aa_tunning_results'
-    main(dftrain,dftest,outputdir)  
+    main(dftrain,dftest,outputdir,n_jobs)  
     
 ####
 ###
