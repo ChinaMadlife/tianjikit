@@ -200,14 +200,6 @@ class Tunning(object):
         
         # 校验label列的合法性
         assert set(dftrain['label']) == {0,1},'illegal label values,label can only be 0 or 1!'
-        
-        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print('\n================================================================================ %s'%nowtime)
-        print('train set size: %d'%len(dftrain))
-        print('test set size: %d'%len(dftest))
-        print('score func: %s'%score_func)
-        print('score gap limit: %s'%str(score_gap_limit))
-        print('n_jobs: %d'%n_jobs)
 
          # 去掉['phone','id','idcard','id_card','loan_dt','name','id_map']等非特征列
         for  col in {'phone','id','unique_id','uniq_id','idcard','id-card','id_card','name','loan_dt','idmap','id_map','id-map'}:
@@ -229,6 +221,15 @@ class Tunning(object):
         self.__inverse_feature_dict = dict(zip(self.__feature_dict.values(),self.__feature_dict.keys()))
         dftrain.columns = [self.__inverse_feature_dict.get(x,x) for x in dftrain.columns]
         dftest.columns = [self.__inverse_feature_dict.get(x,x) for x in dftest.columns]
+        
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s'%nowtime)
+        print('train set size: %d'%len(dftrain))
+        print('test set size: %d'%len(dftest))
+        print('feature number: %s'%str(dftrain.shape[1]))
+        print('score func: %s'%score_func)
+        print('score gap limit: %s'%str(score_gap_limit))
+        print('n_jobs: %d'%n_jobs)
         
         # 分割feature和label
         X_train = dftrain.drop(['label'],axis = 1)
