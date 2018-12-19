@@ -7,13 +7,13 @@ from __future__ import print_function
 #================================================================================
 # 一，配置优化目标条件
 
-task_name = 'msg'
+task_name = 'example'
 score_func = 'ks'                                 #优化评估指标，可以为 'ks'或'auc'
 score_gap_limit  = 0.03                           #可接受train和validate最大评分差值gap
-n_jobs = 16                                       #并行任务数量
 train_data_path = './xx_train_data'               #训练集数据位置
 test_data_path = './xx_test_data'                 #测试集数据位置
 outputdir = './aa_tunning_result_' + task_name    #输出文件夹名
+n_jobs = 16                                       #并行任务数量
 
 #--------------------------------------------------------------------------------
 # 二，配置超参数初始值
@@ -102,48 +102,48 @@ def main(dftrain,dftest,outputdir = outputdir,n_jobs = n_jobs,
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('\n================================================================================ %s'%nowtime)
     print('step1: tune n_estimators for relatively high learning_rate...')
-    tune.gridsearch_cv(params_test1,cv = 5,verbose_eval = 1)
+    tune.gridsearch_cv(params_test1,cv = 5,verbose_eval = 10)
     
     # step2：
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('\n================================================================================ %s'%nowtime)
     print('step2: tune max_depth & min_child_weight...')
-    tune.gridsearch_cv(params_test2,cv = 5)
+    tune.gridsearch_cv(params_test2,cv = 5,verbose_eval = 20)
     
     
     # step3：
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('\n================================================================================ %s'%nowtime)
     print('step3: tune gamma...')
-    tune.gridsearch_cv(params_test3,cv = 5)
+    tune.gridsearch_cv(params_test3,cv = 5,verbose_eval = 20)
     
     
     # step4：
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('\n================================================================================ %s'%nowtime)
     print('step4: tune subsample & colsample_bytree...')
-    tune.gridsearch_cv(params_test4,cv = 5)
+    tune.gridsearch_cv(params_test4,cv = 5,verbose_eval = 20)
     
     
     # step5: 
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('\n================================================================================ %s'%nowtime)
     print('step5: tune reg_alpha...')
-    tune.gridsearch_cv(params_test5,cv = 5)
+    tune.gridsearch_cv(params_test5,cv = 5,verbose_eval = 20)
    
     
     # step6: 
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('\n================================================================================ %s'%nowtime)
     print('step6: tune reg_lambda...')
-    tune.gridsearch_cv(params_test6,cv = 5)
+    tune.gridsearch_cv(params_test6,cv = 5,verbose_eval = 20)
     
     
     # step7: 
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('\n================================================================================ %s'%nowtime)
     print('step7: lower learning_rate...')
-    tune.gridsearch_cv(params_test7,cv = 5)
+    tune.gridsearch_cv(params_test7,cv = 5,verbose_eval = 20)
 
     #generate results
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -156,13 +156,13 @@ def main(dftrain,dftest,outputdir = outputdir,n_jobs = n_jobs,
     
     with open(outputdir +'/best_parameters.json','w') as f:
         json.dump(tune.params_dict,f,cls = numpyJsonEncoder)
+        
+    tune.dfmerge.to_csv(outputdir + '/dfresults',sep = '\t',encoding = 'utf-8')
     try:
         tune.dfmerge.to_excel(outputdir + '/dfresults.xlsx',encoding = 'utf-8')
     except:
-        tune.dfscores.to_csv(outputdir + '/dfscores',sep = '\t',encoding = 'utf-8')
-        tune.dfparams.to_csv(outputdir + '/dfparams',sep = '\t',encoding = 'utf-8')
-        
-    
+        pass
+
     return(tune.params_dict)
     
 if __name__ == '__main__':
