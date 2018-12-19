@@ -1,4 +1,4 @@
-#coding=utf-8
+#-*-coding:utf-8-*-
 #!/usr/bin/python2.7
 ##################################################
 #update_dt:2018-12-19
@@ -13,6 +13,36 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 import xgboost as xgb
+
+# 配置xgboost模型参数
+params_dict = dict()
+
+# 以下为待调整参数
+# booster参数
+params_dict['learning_rate'] = 0.1       # 学习率，初始值为 0.1，通常越小越好。
+params_dict['n_estimators'] = 60         # 加法模型树的数量，初始值为50。
+
+# tree参数
+params_dict['max_depth'] = 3              # 树的深度，通常取值在[3,10]之间，初始值常取[3,6]之间
+params_dict['min_child_weight']= 30       # 最小叶子节点样本权重和，越大模型越保守。
+params_dict['gamma']= 0                   # 节点分裂所需的最小损失函数下降值，越大模型越保守。
+params_dict['subsample']= 0.8             # 横向采样，样本采样比例，通常取值在 [0.5，1]之间 
+params_dict['colsample_bytree'] = 1.0     # 纵向采样，特征采样比例，通常取值在 [0.5，1]之间 
+
+# regulazation参数 
+# Omega(f) = gamma*T + reg_alpha* sum(abs(wj)) + reg_lambda* sum(wj**2)  
+
+params_dict['reg_alpha'] = 0.0              #L1 正则化项的权重系数，越大模型越保守，通常取值在[0,1]之间。
+params_dict['reg_lambda'] = 1.0             #L2 正则化项的权重系数，越大模型越保守，通常取值在[1,100]之间。
+
+# 以下参数通常不需要调整
+params_dict['objective'] = 'binary:logistic'
+params_dict['tree_method'] = 'hist'       # 构建树的策略,可以是auto, exact, approx, hist
+params_dict['eval_metric'] =  'auc'
+params_dict['silent'] = 1
+params_dict['nthread'] = 2
+params_dict['scale_pos_weight'] = 1        #不平衡样本时设定为正值可以使算法更快收敛。
+params_dict['seed'] = 0
 
 # 定义ks评分指标,供xgboost.train函数的feval调用
 def ks_feval(preds,xgbtrain):
@@ -242,12 +272,15 @@ class RunXgboost(object):
     
     
     def train(self,cv = 5,model_idx = 5,
-              params_dict = {'n_estimators': 50,'objective':'binary:logistic','eval_metric':'auc','silent':1},
-              verbose_eval = 20):
+              params_dict = params_dict,
+              n_jobs = 4,verbose_eval = 20):
         
         info = "start train xgboost model ..."
         print(info)
         self.report_info = self.report_info + info + '\n'
+        
+        params_dict_copy = params_dict.copy()
+        params_dict_copy.update({'nthread':n_jobs})
             
         if cv:
             
@@ -269,7 +302,7 @@ class RunXgboost(object):
                 dtrain_k = xgb.DMatrix(X_train_k,y_train_k['label'])
                 dvalid_k = xgb.DMatrix(X_validate_k,y_validate_k['label'])
                 
-                bst,_ = train_xgb(params_dict,dtrain_k,dvalid_k,None,verbose_eval)
+                bst,_ = train_xgb(params_dict_copy,dtrain_k,dvalid_k,None,verbose_eval)
                 predict_train_k = bst.predict(dtrain_k)
                 predict_validate_k = bst.predict(dvalid_k)
 
@@ -319,7 +352,7 @@ class RunXgboost(object):
             print(info)
             self.report_info = self.report_info + info
             
-            bst,_ = train_xgb(params_dict,self.dtrain,None,None,verbose_eval)
+            bst,_ = train_xgb(params_dict_copy,self.dtrain,None,None,verbose_eval)
             predict_train = bst.predict(self.dtrain)
             dfks_train = ks.ks_analysis(predict_train,self.y_train.values)
             ks_train = max(dfks_train['ks_value'])   
