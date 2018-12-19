@@ -260,7 +260,7 @@ class Tunning(object):
         self.score_func = score_func
         self.score_gap_limit = score_gap_limit
         
-    def model_cv(self,params_dict,cv = 5,verbose_eval = False):
+    def model_cv(self,params_dict,cv = 5,verbose_eval = 0):
         
         kfold_indexes = stratified_kfold(self.X_train,self.y_train,nfolds = cv)
         dfresults_list = [np.nan]*cv
@@ -275,7 +275,7 @@ class Tunning(object):
             train_index,valid_index = kfold_indexes[i]
             dtrain = xgb.DMatrix(self.X_train.iloc[train_index,:],self.y_train.iloc[train_index])
             dvalid = xgb.DMatrix(self.X_train.iloc[valid_index,:],self.y_train.iloc[valid_index])
-            verbose = verbose_eval if i == 0 else False
+            verbose = True if i < verbose_eval else False
             bst,dfresults_list[i] = train_xgb(params_dict,dtrain,dvalid,dtest,verbose)
             dfresults_list[i]['train_valid_gap'] =  dfresults_list[i][train_score] - dfresults_list[i][valid_score]
             
@@ -300,7 +300,7 @@ class Tunning(object):
                          'score_gap':dic['train_valid_gap']})
         return ans_dict
     
-    def gridsearch_cv(self,params_test,cv = 5,verbose_eval = False):
+    def gridsearch_cv(self,params_test,cv = 5,verbose_eval = 0):
         
         test_params_grid = params_grid(params_test)
         params_dict = self.params_dict.copy()
