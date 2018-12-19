@@ -86,7 +86,7 @@ def stratified_kfold(data,label,nfolds = 5):
     return result
 
 # 训练xgb模型
-def train_xgb(params_dict,dtrain,dvalid,dtest = None,verbose_eval = False):
+def train_xgb(params_dict,dtrain,dvalid,dtest = None,verbose_eval = 10):
     
     result = {}
     bst = xgb.train(params = params_dict, dtrain = dtrain, 
@@ -160,31 +160,31 @@ class Tunning(object):
     
     # step1: tune n_estimators for relatively high learning_rate
     params_test1 = {'learning_rate': [0.1],'n_estimators':[50]} 
-    tune.gridsearch_cv(params_test1,cv = 5,verbose_eval = True)
+    tune.gridsearch_cv(params_test1,cv = 5,verbose_eval = 10)
     
     # step2：tune max_depth & min_child_weight 
     params_test2 = { 'max_depth': [3], 'min_child_weight': [50,100,200] } 
-    tune.gridsearch_cv(params_test2,cv = 5)
+    tune.gridsearch_cv(params_test2,cv = 5,verbose_eval = 10)
     
     
     # step3：tune gamma
     params_test3 = {'gamma': [0.1,0.5,1]}
-    tune.gridsearch_cv(params_test3,cv = 5)
+    tune.gridsearch_cv(params_test3,cv = 5,verbose_eval = 10)
     
     
     # step4：tune subsample & colsample_bytree 
     params_test4 = { 'subsample': [0.9,1.0],'colsample_bytree': [1.0] } 
-    tune.gridsearch_cv(params_test4,cv = 5)
+    tune.gridsearch_cv(params_test4,cv = 5,verbose_eval = 10)
     
     
     # step5: tune reg_alpha 
     params_test5 = { 'reg_alpha': [0.1,1] } 
-    tune.gridsearch_cv(params_test5,cv = 5)
+    tune.gridsearch_cv(params_test5,cv = 5,verbose_eval = 10)
    
     
     # step6: tune reg_lambda 
     params_test6 = { 'reg_lambda': [0,0.1] }
-    tune.gridsearch_cv(params_test6,cv = 5)
+    tune.gridsearch_cv(params_test6,cv = 5,verbose_eval = 10)
     
     
     # step7: lower learning_rate and rise n_estimators
@@ -260,7 +260,7 @@ class Tunning(object):
         self.score_func = score_func
         self.score_gap_limit = score_gap_limit
         
-    def model_cv(self,params_dict,cv = 5,verbose_eval = 0):
+    def model_cv(self,params_dict,cv = 5,verbose_eval = 10):
         
         kfold_indexes = stratified_kfold(self.X_train,self.y_train,nfolds = cv)
         dfresults_list = [np.nan]*cv
@@ -275,8 +275,7 @@ class Tunning(object):
             train_index,valid_index = kfold_indexes[i]
             dtrain = xgb.DMatrix(self.X_train.iloc[train_index,:],self.y_train.iloc[train_index])
             dvalid = xgb.DMatrix(self.X_train.iloc[valid_index,:],self.y_train.iloc[valid_index])
-            verbose = True if i < verbose_eval else False
-            bst,dfresults_list[i] = train_xgb(params_dict,dtrain,dvalid,dtest,verbose)
+            bst,dfresults_list[i] = train_xgb(params_dict,dtrain,dvalid,dtest,verbose_eval)
             dfresults_list[i]['train_valid_gap'] =  dfresults_list[i][train_score] - dfresults_list[i][valid_score]
             
         def npmean(*d):
@@ -300,7 +299,7 @@ class Tunning(object):
                          'score_gap':dic['train_valid_gap']})
         return ans_dict
     
-    def gridsearch_cv(self,params_test,cv = 5,verbose_eval = 0):
+    def gridsearch_cv(self,params_test,cv = 5,verbose_eval = 10):
         
         test_params_grid = params_grid(params_test)
         params_dict = self.params_dict.copy()
