@@ -42,20 +42,14 @@ params_dict['silent'] = 1
 params_dict['scale_pos_weight'] = 1        #不平衡样本时设定为正值可以使算法更快收敛。
 params_dict['seed'] = 0
 
-
-# 定义ks评分指标,供用户调用
-def ks(label,feature):
-    assert len(feature) == len(label)
-    df = pd.DataFrame(data = np.array([feature,label]).T,columns = ['feature','label'])
-    df_0,df_1 = df[df['label']<0.5],df[df['label']>=0.5]
-    ks,ks_pvalue = stats.ks_2samp(df_0['feature'].values,df_1['feature'].values)
-    return ks
-
-# 定义ks评分指标,供xgboost.cv函数的feval调用
+# 定义ks评分指标,供xgboost.train函数的feval调用
 def ks_feval(preds,xgbtrain):
     label = xgbtrain.get_label()
-    ks_value = ks(label,preds)
-    return 'ks',ks_value
+    assert len(preds) == len(label)
+    df = pd.DataFrame(data = np.array([preds,label]).T,columns = ['preds','label'])
+    df_0,df_1 = df[df['label']<0.5],df[df['label']>=0.5]
+    ks,ks_pvalue = stats.ks_2samp(df_0['preds'].values,df_1['preds'].values)
+    return 'ks',ks
 
 # 美化dataframe输出
 from prettytable import PrettyTable
@@ -86,17 +80,19 @@ def stratified_kfold(data,label,nfolds = 5):
     return result
 
 # 训练xgb模型
-def train_xgb(params_dict,dtrain,dvalid,dtest = None,verbose_eval = 10):
+def train_xgb(params_dict,dtrain,dvalid = None,dtest = None,verbose_eval = 10):
     
     result = {}
+    watchlist = [x for x in [(dtrain, 'train'),(dvalid,'valid'),(dtest,'test')] if x[0] is not None]
+    datasets = [x[1] for x in watchlist]
+    
     bst = xgb.train(params = params_dict, dtrain = dtrain, 
                     num_boost_round = params_dict.get('n_estimators',100), 
                     feval = ks_feval,verbose_eval= verbose_eval,
-                    evals = [(dtrain, 'train'),(dvalid,'valid'),(dtest, 'test')] if dtest is not None else \
-                    [(dtrain, 'train'),(dvalid,'valid')], 
+                    evals = watchlist,
                     evals_result = result)
     dfresult = pd.DataFrame({(dataset+'_'+feval): result[dataset][feval] 
-               for dataset in ('train','valid','test') for feval in ('auc','ks')})
+               for dataset in datasets for feval in ('auc','ks')})
     
     return bst,dfresult
 
