@@ -157,8 +157,7 @@ def main(dftrain,dftest,outputdir = outputdir,n_jobs = n_jobs,
     with open(outputdir +'/best_parameters.json','w') as f:
         json.dump(tune.params_dict,f,cls = numpyJsonEncoder)
     try:
-        tune.dfscores.to_excel(outputdir + '/dfscores.xlsx',encoding = 'utf-8')
-        tune.dfparams.to_excel(outputdir + '/dfparams.xlsx',encoding = 'utf-8')
+        tune.dfmerge.to_excel(outputdir + '/dfresults.xlsx',encoding = 'utf-8')
     except:
         tune.dfscores.to_csv(outputdir + '/dfscores',sep = '\t',encoding = 'utf-8')
         tune.dfparams.to_csv(outputdir + '/dfparams',sep = '\t',encoding = 'utf-8')
