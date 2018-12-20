@@ -1,0 +1,1 @@
+{"reg_alpha": 0, "eval_metric": "auc", "scale_pos_weight": 1, "learning_rate": 0.1, "n_estimators": 50, "seed": 0, "tree_method": "hist", "colsample_bytree": 1.0, "silent": 1, "nthread": 16, "min_child_weight": 30, "subsample": 0.9, "reg_lambda": 0, "objective": "binary:logistic", "max_depth": 3, "gamma": 0.5}

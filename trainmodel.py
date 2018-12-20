@@ -4,7 +4,7 @@
 ##################################################
 #update_dt:2018-10-08
 #author：liangyun
-#usage: run model
+#usage: train model
 ##################################################
 from __future__ import print_function
 import datetime,sys,os
@@ -54,7 +54,7 @@ def stratified_kfold(data,label,nfolds = 5):
     return result
 
 
-class RunModel(object):
+class TrainModel(object):
     """
     Examples
     ---------
@@ -73,8 +73,8 @@ class RunModel(object):
     dftrain.loc[0,['feature0','feature1','feature2']] = np.nan #构造若干缺失值
     
     # 训练逻辑回归模型
-    from tianjikit.runmodel import RunModel
-    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0,
+    from tianjikit.trainmodel import TrainModel
+    model = TrainModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0,
             outliers_th=None, fillna_method='most', scale_method=None,selected_features=None)
     lr = model.train_lr(cv=None, model_idx=5)
     model.test(lr)
@@ -82,8 +82,8 @@ class RunModel(object):
     
 
     # 训练随机森林模型
-    from tianjikit.runmodel import RunModel
-    model = RunModel(dftrain = dftrain,dftest = dftest, coverage_th=0.1, ks_th=0,
+    from tianjikit.trainmodel import TrainModel
+    model = TrainModel(dftrain = dftrain,dftest = dftest, coverage_th=0.1, ks_th=0,
             outliers_th=None, fillna_method='most', scale_method=None,selected_features=None)
     rf = model.train_rf(cv=5, model_idx=5,
           n_estimators=100, max_depth=10, min_samples_split=2,
@@ -94,8 +94,8 @@ class RunModel(object):
     
 
     # 训练gbdt模型
-    from tianjikit.runmodel import RunModel
-    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0,
+    from tianjikit.trainmodel import TrainModel
+    model = trainModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0,
             outliers_th=None, fillna_method='most', scale_method=None,selected_features=None)
     gbdt = model.train_gbdt(cv=5, model_idx=5,
            learning_rate=0.01, n_estimators=50, max_depth= 3, min_samples_split= 50, 
@@ -105,8 +105,8 @@ class RunModel(object):
     
 
     # 训练xgboost模型
-    from tianjikit.runmodel import RunModel
-    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0, ks_th=0,
+    from tianjikit.trainmodel import TrainModel
+    model = TrainModel(dftrain = dftrain,dftest = dftest,coverage_th=0, ks_th=0,
             outliers_th=None, fillna_method= None, scale_method= None,selected_features=None)
     xgb = model.train_xgb(cv=5, model_idx=5,
           learning_rate=0.1,n_estimators=50, 
@@ -119,8 +119,8 @@ class RunModel(object):
     
     
     # 训练lightgbm模型
-    from tianjikit.runmodel import RunModel
-    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0, ks_th=0,
+    from tianjikit.trainmodel import TrainModel
+    model = TrainModel(dftrain = dftrain,dftest = dftest,coverage_th=0, ks_th=0,
             outliers_th=None, fillna_method= None, scale_method= None,selected_features=None)
     lgbm = model.train_lgbm(cv = 5, model_idx = 1,    
                    num_leaves=31, max_depth=-1, learning_rate=0.1,n_estimators=10,max_bin=255,
@@ -132,8 +132,8 @@ class RunModel(object):
     
     
     # 训练神经网络模型
-    from tianjikit.runmodel import RunModel
-    model = RunModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, 
+    from tianjikit.trainmodel import TrainModel
+    model = TrainModel(dftrain = dftrain,dftest = dftest,coverage_th=0.1, ks_th=0, 
             outliers_th=None, fillna_method='most', scale_method= None, selected_features=None)
     nn = model.train_nn( cv = 5, model_idx = 1,
          hidden_layer_sizes=(100,20), activation='relu', alpha=0.0001, 

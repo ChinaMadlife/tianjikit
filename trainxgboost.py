@@ -3,7 +3,7 @@
 ##################################################
 #update_dt:2018-12-19
 #author：liangyun
-#usage: run xgboost model
+#usage: train xgboost model
 ##################################################
 
 from __future__ import print_function
@@ -113,7 +113,7 @@ def train_xgb(params_dict,dtrain,dvalid = None,dtest = None,verbose_eval = 10):
     
     return bst,dfresult
 
-class RunXgboost(object):
+class TrainXgboost(object):
     """
     Examples
     ---------
@@ -163,10 +163,10 @@ class RunXgboost(object):
     params_dict['seed'] = 0
     
     # 训练xgboost模型
-    from tianjikit.runxgboost import RunXgboost
+    from tianjikit.trainxgboost import TrainXgboost
     model = RunXgboost(dftrain = dftrain,dftest = dftest, coverage_th=0, ks_th=0,
             outliers_th=None, selected_features=None)
-    bst = model.train(cv=5, model_idx=1,params_dict = params_dict,verbose_eval = 10) 
+    bst = model.train(cv=5, model_idx=1,params_dict = params_dict,n_jobs = 4, verbose_eval = 10) 
     model.test(bst,dftest)
     dfimportance = model.dfimportance
     # bst.save_model('./bst.model')
@@ -292,7 +292,8 @@ class RunXgboost(object):
 
                 k = k + 1
                 nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                info = '\n{}: k = {}'.format(nowtime,k)
+                print('\n================================================================================ %s\n'%nowtime)
+                info = 'k = {}'.format(k)
                 print(info)
                 self.report_info = self.report_info + info + '\n'
                 
@@ -380,7 +381,7 @@ class RunXgboost(object):
         
     def test(self,bst,dftest = pd.DataFrame()):
         
-        info = "\nstart test xgboost model ... "
+        info = "\nstart test xgboost model ... \n"
         print(info)
         self.report_info = self.report_info + info + '\n'
         

@@ -11,7 +11,6 @@ import numpy as np
 import pandas as pd 
 from scipy import stats
 import xgboost as xgb
-import pdb 
 
 # 初始化参数
 params_dict = dict()
@@ -119,6 +118,7 @@ class Tunning(object):
     import pandas as pd
     from sklearn import datasets
     from sklearn.model_selection import train_test_split
+    import xgboost as xgb
     from tianjikit.tunning import Tunning
     
     data,label = datasets.make_classification(n_samples= 10000, n_features=20, n_informative= 6 ,
@@ -187,6 +187,11 @@ class Tunning(object):
     params_test7 = { 'learning_rate':[0.08,0.09], 'n_estimators':[100]}
     tune.gridsearch_cv(params_test7,cv = 5)
     
+    # step8: train model with tuned parameters and fully train dataset.
+    bst,dfimportance = tune.train_best()
+    bst.save_model('./bst.model')
+    dfimportance.to_csv('./dfimportance.csv',sep = '\t')
+    
     """
     
     def __init__(self,dftrain,dftest,score_func = 'ks',score_gap_limit = 0.05,params_dict = params_dict,n_jobs = 4):
@@ -219,7 +224,7 @@ class Tunning(object):
         dftest.columns = [self.__inverse_feature_dict.get(x,x) for x in dftest.columns]
         
         nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print('\n================================================================================ %s'%nowtime)
+        print('\n================================================================================ %s\n'%nowtime)
         print('train set size: %d'%len(dftrain))
         print('test set size: %d'%len(dftest))
         print('feature number: %s'%str(dftrain.shape[1]))
@@ -266,7 +271,7 @@ class Tunning(object):
         test_score = 'test_' + self.score_func
         for i in range(cv):
             nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            print('\n================================================================================ %s'%nowtime)
+            print('\n================================================================================ %s\n'%nowtime)
             print('k = %d'%(i+1))
             train_index,valid_index = kfold_indexes[i]
             dtrain = xgb.DMatrix(self.X_train.iloc[train_index,:],self.y_train.iloc[train_index])
@@ -302,7 +307,7 @@ class Tunning(object):
         
         for d in test_params_grid:
             nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            print('\n================================================================================ %s'%nowtime)
+            print('\n================================================================================ %s\n'%nowtime)
             print(d)
             params_dict.update(d)
             ans_dict = self.model_cv(params_dict,cv,verbose_eval)
@@ -324,7 +329,7 @@ class Tunning(object):
         self.params_dict.update(best_params)
         
         nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print('\n================================================================================ %s'%nowtime)
+        print('\n================================================================================ %s\n'%nowtime)
         print('Tested params:')
         print(pretty_dataframe(self.dfparams))
         print('Tested scores:')
@@ -335,6 +340,19 @@ class Tunning(object):
         print(pretty_dataframe(dfscore_best)) 
         
         return(dfscore_best)
+    
+    def train_best(self,verbose_eval = 10):
+        
+        dtrain = xgb.DMatrix(self.X_train,self.y_train)
+        dtest = xgb.DMatrix(self.X_test,self.y_test)
+        
+        bst,_ = train_xgb(self.params_dict,dtrain,None,dtest,verbose_eval)
+        dfimportance = pd.DataFrame({'feature':bst.get_score().keys(),'importance':bst.get_score().values()})
+        try:
+            dfimportance = dfimportance.sort_values('importance',ascending=False)
+        except AttributeError as err:
+            dfimportance = dfimportance.sort('importance',ascending = False)
+        return(bst, dfimportance)
   
         
         
