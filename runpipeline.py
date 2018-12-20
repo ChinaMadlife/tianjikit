@@ -12,7 +12,7 @@ score_func = 'ks'                                 #优化评估指标，可以�
 score_gap_limit  = 0.03                           #可接受train和validate最大评分差值gap
 train_data_path = './xx_train_data'               #训练集数据位置
 test_data_path = './xx_test_data'                 #测试集数据位置
-outputdir = './aa_everything_result_' + task_name    #输出文件夹名
+outputdir = './aa_pipeline_result_' + task_name    #输出文件夹名
 n_jobs = 16                                       #并行任务数量
 
 #--------------------------------------------------------------------------------
