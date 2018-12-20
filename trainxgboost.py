@@ -164,7 +164,7 @@ class TrainXgboost(object):
     
     # 训练xgboost模型
     from tianjikit.trainxgboost import TrainXgboost
-    model = RunXgboost(dftrain = dftrain,dftest = dftest, coverage_th=0, ks_th=0,
+    model = TrainXgboost(dftrain = dftrain,dftest = dftest, coverage_th=0, ks_th=0,
             outliers_th=None, selected_features=None)
     bst = model.train(cv=5, model_idx=1,params_dict = params_dict,n_jobs = 4, verbose_eval = 10) 
     model.test(bst,dftest)
