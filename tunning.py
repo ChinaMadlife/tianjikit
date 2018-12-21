@@ -216,12 +216,6 @@ class Tunning(object):
             print('removed feature columns not numerical: %s'%(','.join(map(str,object_cols))),file = sys.stderr)
             dftrain = dftrain.drop(object_cols,axis = 1)
             if len(dftest):dftest = dftest.drop(object_cols,axis = 1)
-                
-        # 制作特征名称映射表并更改特征名，复杂的特征名可能导致xgboost出错
-        self.__feature_dict = {'feature'+ str(i): name for i,name in enumerate(dftrain.columns.drop('label'))}
-        self.__inverse_feature_dict = dict(zip(self.__feature_dict.values(),self.__feature_dict.keys()))
-        dftrain.columns = [self.__inverse_feature_dict.get(x,x) for x in dftrain.columns]
-        dftest.columns = [self.__inverse_feature_dict.get(x,x) for x in dftest.columns]
         
         nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print('\n================================================================================ %s\n'%nowtime)

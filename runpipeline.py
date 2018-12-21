@@ -215,8 +215,8 @@ def main(dftrain,dftest,outputdir = outputdir,n_jobs = n_jobs,
     except:
         pass
     
-    bst.save_model('./bst.model')
-    dfimportance.to_csv('./dfimportance.csv',sep = '\t')
+    bst.save_model(outputdir + '/bst.model')
+    dfimportance.to_csv(outputdir + '/dfimportance.csv',sep = '\t')
     
     #================================================================================
     # 二，模型报告
