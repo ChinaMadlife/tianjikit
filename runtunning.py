@@ -13,7 +13,7 @@ score_gap_limit  = 0.03                           #可接受train和validate最�
 train_data_path = './xx_train_data'               #训练集数据位置
 test_data_path = './xx_test_data'                 #测试集数据位置
 outputdir = './aa_tunning_result_' + task_name    #输出文件夹名
-n_jobs = 16                                       #并行任务数量
+n_jobs = 4                                       #并行任务数量
 
 #--------------------------------------------------------------------------------
 # 二，配置超参数初始值
@@ -41,7 +41,7 @@ params_dict['reg_lambda'] = 1             #L2 正则化项的权重系数，越�
 
 # 以下参数通常不需要调整
 params_dict['objective'] = 'binary:logistic'
-params_dict['tree_method'] = 'hist'       # 构建树的策略,可以是auto, exact, approx, hist
+params_dict['tree_method'] = 'auto'       # 构建树的策略,可以是auto, exact, approx, hist
 params_dict['eval_metric'] =  'auc'
 params_dict['silent'] = 1
 params_dict['scale_pos_weight'] = 1        #不平衡样本时设定为正值可以使算法更快收敛。
@@ -95,71 +95,86 @@ def main(dftrain,dftest,outputdir = outputdir,n_jobs = n_jobs,
          score_func = score_func, score_gap_limit = score_gap_limit,
          params_dict = params_dict):
     
+    if not os.path.exists(outputdir):
+        os.makedirs(outputdir)
+    
     # step0: 初始化
     tune = Tunning(dftrain,dftest,score_func = score_func,score_gap_limit = score_gap_limit, params_dict=params_dict,n_jobs=n_jobs)
     
     # step1: 
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s'%nowtime)
-    print('step1: tune n_estimators for relatively high learning_rate...')
+    print('\n================================================================================ %s\n'%nowtime)
+    print('step1: try relatively high learning_rate...')
     tune.gridsearch_cv(params_test1,cv = 5,verbose_eval = 10)
     
     # step2：
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s'%nowtime)
+    print('\n================================================================================ %s\n'%nowtime)
     print('step2: tune max_depth & min_child_weight...')
     tune.gridsearch_cv(params_test2,cv = 5,verbose_eval = 20)
     
     
     # step3：
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s'%nowtime)
+    print('\n================================================================================ %s\n'%nowtime)
     print('step3: tune gamma...')
     tune.gridsearch_cv(params_test3,cv = 5,verbose_eval = 20)
     
     
     # step4：
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s'%nowtime)
+    print('\n================================================================================ %s\n'%nowtime)
     print('step4: tune subsample & colsample_bytree...')
     tune.gridsearch_cv(params_test4,cv = 5,verbose_eval = 20)
     
     
     # step5: 
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s'%nowtime)
+    print('\n================================================================================ %s\n'%nowtime)
     print('step5: tune reg_alpha...')
     tune.gridsearch_cv(params_test5,cv = 5,verbose_eval = 20)
    
     
     # step6: 
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s'%nowtime)
+    print('\n================================================================================ %s\n'%nowtime)
     print('step6: tune reg_lambda...')
     tune.gridsearch_cv(params_test6,cv = 5,verbose_eval = 20)
     
     
     # step7: 
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s'%nowtime)
-    print('step7: lower learning_rate...')
+    print('\n================================================================================ %s\n'%nowtime)
+    print('step7: try relatively low learning_rate...')
     tune.gridsearch_cv(params_test7,cv = 5,verbose_eval = 20)
-
+    
+    # step8: 
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
+    print('step8: train model with tuned parameters and fully train dataset...')
+    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('\n================================================================================ %s\n'%nowtime)
+    bst,dfimportance = tune.train_best()
+   
     #generate results
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s'%nowtime)
-    print('save results... ')
-    print('tune task end. ')
-   
-    if not os.path.exists(outputdir):
-        os.makedirs(outputdir)
-    
+    print('\n================================================================================ %s\n'%nowtime)
+    print('save results...\n\n ')
+       
     with open(outputdir +'/best_parameters.json','w') as f:
         json.dump(tune.params_dict,f,cls = numpyJsonEncoder)
         
     tune.dfmerge.to_csv(outputdir + '/dfresults',sep = '\t',encoding = 'utf-8')
     try:
         tune.dfmerge.to_excel(outputdir + '/dfresults.xlsx',encoding = 'utf-8')
+    except:
+        pass
+    
+    bst.save_model(outputdir + '/bst.model')
+    
+    dfimportance.to_csv(outputdir + '/dfimportance',sep = '\t',encoding = 'utf-8')
+    try:
+        dfimportance.to_excel(outputdir + '/dfimportance.xlsx',encoding = 'utf-8')
     except:
         pass
 

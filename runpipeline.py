@@ -216,10 +216,15 @@ def main(dftrain,dftest,outputdir = outputdir,n_jobs = n_jobs,
         pass
     
     bst.save_model(outputdir + '/bst.model')
-    dfimportance.to_csv(outputdir + '/dfimportance.csv',sep = '\t')
+    
+    dfimportance.to_csv(outputdir + '/dfimportance',sep = '\t',encoding = 'utf-8')
+    try:
+        dfimportance.to_excel(outputdir + '/dfimportance.xlsx',encoding = 'utf-8')
+    except:
+        pass
     
     #================================================================================
-    # 二，模型报告
+    # 三，模型报告
     #================================================================================
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('\n================================================================================ %s\n'%nowtime)

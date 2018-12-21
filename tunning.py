@@ -23,7 +23,7 @@ params_dict['n_estimators'] = 60         # 加法模型树的数量，初始值�
 # tree参数
 params_dict['max_depth'] = 3              # 树的深度，通常取值在[3,10]之间，初始值常取[3,6]之间
 params_dict['min_child_weight']= 30       # 最小叶子节点样本权重和，越大模型越保守。
-params_dict['gamma']= 0                   # 节点分裂所需的最小损失函数下降值，越大模型越保守。
+params_dict['gamma']= 0.0                   # 节点分裂所需的最小损失函数下降值，越大模型越保守。
 params_dict['subsample']= 0.8             # 横向采样，样本采样比例，通常取值在 [0.5，1]之间 
 params_dict['colsample_bytree'] = 1.0     # 纵向采样，特征采样比例，通常取值在 [0.5，1]之间 
 
@@ -43,9 +43,9 @@ params_dict['seed'] = 0
 
 # 定义ks评分指标,供xgboost.train函数的feval调用
 def ks_feval(preds,xgbtrain):
-    label = xgbtrain.get_label()
-    assert len(preds) == len(label)
-    df = pd.DataFrame(data = np.array([preds,label]).T,columns = ['preds','label'])
+    labels = xgbtrain.get_label()
+    assert len(preds) == len(labels)
+    df = pd.DataFrame(data = np.array([preds,labels]).T,columns = ['preds','label'])
     df_0,df_1 = df[df['label']<0.5],df[df['label']>=0.5]
     ks,ks_pvalue = stats.ks_2samp(df_0['preds'].values,df_1['preds'].values)
     return 'ks',ks
@@ -241,7 +241,7 @@ class Tunning(object):
         self.X_train,self.y_train = X_train,y_train
         self.X_test,self.y_test  = X_test,y_test
         
-        # self.params_dict 存储当前参数，self.dfscores存储历史得分记录，self.dfparams存储历史参数记录,
+        # self.params_dict存储当前参数，self.dfscores存储历史得分记录，self.dfparams存储历史参数记录,
         # self.dfmerge是dfscores和dfparams的合并
         self.params_dict = params_dict.copy()
         self.params_dict['nthread'] = n_jobs
@@ -288,6 +288,7 @@ class Tunning(object):
             dfans = dfmean.iloc[[np.argmin(dfmean['train_valid_gap'].values)],:]
         
         dic = dict(dfans.iloc[np.argmax(dfans[valid_score].values),:])
+        dic['n_estimators'] = int(dic['n_estimators'])
         ans_dict = params_dict.copy()
         ans_dict.update({'n_estimators':dic['n_estimators'],'train_score':dic[train_score],
                          'validate_score':dic[valid_score],'test_score':dic[test_score],
@@ -316,10 +317,10 @@ class Tunning(object):
         dfscore_best = df_filter.iloc[[np.argmax(df_filter['validate_score'].values)],:]
         dfparams_best = self.dfparams.query('model_id == {}'.format(dfscore_best['model_id'].values[0]))
         
-        # 更新最优参数至当前参数
+        # 更新最优参数至当前参数,除了n_estimators
         best_params = dict(dfparams_best.iloc[0,:])
         best_params.pop('model_id')
-        best_params.pop('n_estimators')
+        best_params.pop('n_estimators')    # 最优的n_estimators 不逐级传递，依赖model_cv每次确认。  
         self.params_dict.update(best_params)
         
         nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -339,6 +340,18 @@ class Tunning(object):
         
         dtrain = xgb.DMatrix(self.X_train,self.y_train)
         dtest = xgb.DMatrix(self.X_test,self.y_test)
+        
+        # 寻找历史参数序列中最优参数
+        df_filter = self.dfscores.query('score_gap < {}'.format(self.score_gap_limit))
+        dfscore_best = df_filter.iloc[[np.argmax(df_filter['validate_score'].values)],:]
+        dfparams_best = self.dfparams.query('model_id == {}'.format(dfscore_best['model_id'].values[0]))
+        
+        # 更新全部最优参数至当前参数包括n_estimators
+        best_params = dict(dfparams_best.iloc[0,:])
+        best_params['n_estimators'] = int(best_params['n_estimators'])
+        best_params.pop('model_id')   
+        
+        self.params_dict.update(best_params) 
         
         bst,_ = train_xgb(self.params_dict,dtrain,None,dtest,verbose_eval)
         dfimportance = pd.DataFrame({'feature':bst.get_score().keys(),'importance':bst.get_score().values()})

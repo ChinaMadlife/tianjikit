@@ -46,9 +46,9 @@ params_dict['seed'] = 0
 
 # 定义ks评分指标,供xgboost.train函数的feval调用
 def ks_feval(preds,xgbtrain):
-    label = xgbtrain.get_label()
-    assert len(preds) == len(label)
-    df = pd.DataFrame(data = np.array([preds,label]).T,columns = ['preds','label'])
+    labels = xgbtrain.get_label()
+    assert len(preds) == len(labels)
+    df = pd.DataFrame(data = np.array([preds,labels]).T,columns = ['preds','label'])
     df_0,df_1 = df[df['label']<0.5],df[df['label']>=0.5]
     ks,ks_pvalue = stats.ks_2samp(df_0['preds'].values,df_1['preds'].values)
     return 'ks',ks
