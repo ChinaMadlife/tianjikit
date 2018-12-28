@@ -9,7 +9,7 @@ from __future__ import print_function
 
 task_name = 'example'
 score_func = 'ks'                                 #优化评估指标，可以为 'ks'或'auc',如xgboost版本低于0.71，只能为'ks'.
-score_gap_limit  = 0.03                           #可接受train和validate最大评分差值gap
+score_gap_limit  = - 0.1                           #可接受train和validate最大评分差值gap
 train_data_path = './xx_train_data'               #训练集数据位置
 test_data_path = './xx_test_data'                 #测试集数据位置
 outputdir = './aa_tunning_result_' + task_name    #输出文件夹名
@@ -52,17 +52,17 @@ params_dict['seed'] = 0
 
 params_test1 = {'learning_rate': [0.1],'n_estimators':[50]}  #此处应配置较大 learning_rate
 
-params_test2 = { 'max_depth': [3], 'min_child_weight': [50,100,200] } 
+#params_test2 = { 'max_depth': [3], 'min_child_weight': [50,100,200] } 
 
-params_test3 = {'gamma': [0.1,0.5,1]}
+#params_test3 = {'gamma': [0.1,0.5,1]}
 
-params_test4 = { 'subsample': [0.9,1.0],'colsample_bytree': [1.0] } 
+#params_test4 = { 'subsample': [0.9,1.0],'colsample_bytree': [1.0] } 
 
-params_test5 = { 'reg_alpha': [0.1,1] } 
+#params_test5 = { 'reg_alpha': [0.1,1] } 
 
-params_test6 = { 'reg_lambda': [0,0.1] }
+#params_test6 = { 'reg_lambda': [0,0.1] }
 
-params_test7 = {'learning_rate':[0.09,0.08],'n_estimators':[100]} #此处应配置较小learning_rate
+#params_test7 = {'learning_rate':[0.09,0.08],'n_estimators':[100]} #此处应配置较小learning_rate
 #===============================================================================
 
 
@@ -84,6 +84,7 @@ params_test7 = {'learning_rate':[0.09,0.08],'n_estimators':[100]} #此处应配�
 
 '''
 # 训练xgb模型
+import xgboost
 def train_xgb(params_dict,dtrain,dvalid = None,dtest = None,verbose_eval = 10):
     
     result = {}
@@ -1809,56 +1810,6 @@ def from_html_one(html_code, **kwargs):
         raise Exception("More than one <table> in provided HTML code!  Use from_html instead.")
     return tables[0]
 
-##############################
-# MAIN (TEST FUNCTION)       #
-##############################
-'''
-def main():
-
-    print("Generated using setters:")
-    x = PrettyTable(["City name", "Area", "Population", "Annual Rainfall"])
-    x.title = "Australian capital cities"
-    x.sortby = "Population"
-    x.reversesort = True
-    x.int_format["Area"] = "04"
-    x.float_format = "6.1"
-    x.align["City name"] = "l" # Left align city names
-    x.add_row(["Adelaide", 1295, 1158259, 600.5])
-    x.add_row(["Brisbane", 5905, 1857594, 1146.4])
-    x.add_row(["Darwin", 112, 120900, 1714.7])
-    x.add_row(["Hobart", 1357, 205556, 619.5])
-    x.add_row(["Sydney", 2058, 4336374, 1214.8])
-    x.add_row(["Melbourne", 1566, 3806092, 646.9])
-    x.add_row(["Perth", 5386, 1554769, 869.4])
-    print(x)
-    
-    print
-    
-    print("Generated using constructor arguments:")
-    
-    y = PrettyTable(["City name", "Area", "Population", "Annual Rainfall"],
-        title = "Australian capital cities",
-        sortby = "Population",
-        reversesort = True,
-        int_format = "04",
-        float_format = "6.1",
-        max_width = 12,
-        min_width = 4,
-        align = "c",
-        valign = "t")
-    y.align["City name"] = "l" # Left align city names
-    y.add_row(["Adelaide", 1295, 1158259, 600.5])
-    y.add_row(["Brisbane", 5905, 1857594, 1146.4])
-    y.add_row(["Darwin", 112, 120900, 1714.7])
-    y.add_row(["Hobart", 1357, 205556, 619.5])
-    y.add_row(["Sydney", 2058, 4336374, 1214.8])
-    y.add_row(["Melbourne", 1566, 3806092, 646.9])
-    y.add_row(["Perth", 5386, 1554769, 869.4])
-    print(y)
-    
-if __name__ == "__main__":
-    main()
-'''
 #########
 #######
 #####
@@ -2059,15 +2010,6 @@ class Tunning(object):
             dftrain = dftrain.drop(object_cols,axis = 1)
             if len(dftest):dftest = dftest.drop(object_cols,axis = 1)
         
-        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print('\n================================================================================ %s\n'%nowtime)
-        print('train set size: %d'%len(dftrain))
-        print('test set size: %d'%len(dftest))
-        print('feature number: %s'%str(dftrain.shape[1]))
-        print('score func: %s'%score_func)
-        print('score gap limit: %s'%str(score_gap_limit))
-        print('n_jobs: %d'%n_jobs)
-        
         # 分割feature和label
         X_train = dftrain.drop(['label'],axis = 1)
         y_train = dftrain['label']
@@ -2096,6 +2038,15 @@ class Tunning(object):
         
         self.score_func = score_func
         self.score_gap_limit = score_gap_limit
+        
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('train set size: %d'%len(Xtrain))
+        print('test set size: %d'%len(Xtest))
+        print('feature number: %s'%str(Xtrain.shape[1]))
+        print('score func: %s'%score_func)
+        print('score gap limit: %s'%str(score_gap_limit))
+        print('n_jobs: %d'%n_jobs)
         
     def model_cv(self,params_dict,cv = 5,verbose_eval = 10):
         
@@ -2156,6 +2107,8 @@ class Tunning(object):
             self.dfparams.loc[m,:] = dic_merge
             
         df_filter = self.dfscores.query('score_gap < {}'.format(self.score_gap_limit))
+        if len(df_filter) <1: 
+            df_filter = self.dfscores.iloc[[np.argmin(self.dfscores['score_gap'].values)],:]
         dfscore_best = df_filter.iloc[[np.argmax(df_filter['validate_score'].values)],:]
         dfparams_best = self.dfparams.query('model_id == {}'.format(dfscore_best['model_id'].values[0]))
         
@@ -2185,6 +2138,8 @@ class Tunning(object):
         
         # 寻找历史参数序列中最优参数
         df_filter = self.dfscores.query('score_gap < {}'.format(self.score_gap_limit))
+        if len(df_filter) <1: 
+            df_filter = self.dfscores.iloc[[np.argmin(self.dfscores['score_gap'].values)],:]
         dfscore_best = df_filter.iloc[[np.argmax(df_filter['validate_score'].values)],:]
         dfparams_best = self.dfparams.query('model_id == {}'.format(dfscore_best['model_id'].values[0]))
         
@@ -2243,51 +2198,58 @@ def main(dftrain,dftest,outputdir = outputdir,n_jobs = n_jobs,
     tune = Tunning(dftrain,dftest,score_func = score_func,score_gap_limit = score_gap_limit, params_dict=params_dict,n_jobs=n_jobs)
     
     # step1: 
-    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s\n'%nowtime)
-    print('step1: try relatively high learning_rate...')
-    tune.gridsearch_cv(params_test1,cv = 5,verbose_eval = 10)
+    if 'params_test1' in globals():
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('step1: try relatively high learning_rate...')
+        dfscore_best = tune.gridsearch_cv(params_test1,cv = 5,verbose_eval = 20)
     
     # step2：
-    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s\n'%nowtime)
-    print('step2: tune max_depth & min_child_weight...')
-    tune.gridsearch_cv(params_test2,cv = 5,verbose_eval = 20)
+    if 'params_test2' in globals():
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('step2: tune max_depth & min_child_weight...')
+        dfscore_best = tune.gridsearch_cv(params_test2,cv = 5,verbose_eval = 20)
     
     
     # step3：
-    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s\n'%nowtime)
-    print('step3: tune gamma...')
-    tune.gridsearch_cv(params_test3,cv = 5,verbose_eval = 20)
+    if 'params_test3' in globals():
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('step3: tune gamma...')
+        dfscore_best = tune.gridsearch_cv(params_test3,cv = 5,verbose_eval = 20)
     
     
     # step4：
-    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s\n'%nowtime)
-    print('step4: tune subsample & colsample_bytree...')
-    tune.gridsearch_cv(params_test4,cv = 5,verbose_eval = 20)
-    
+    if 'params_test4' in globals():
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('step4: tune subsample & colsample_bytree...')
+        dfscore_best = tune.gridsearch_cv(params_test4,cv = 5,verbose_eval = 20)
+
     
     # step5: 
-    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s\n'%nowtime)
-    print('step5: tune reg_alpha...')
-    tune.gridsearch_cv(params_test5,cv = 5,verbose_eval = 20)
+    if 'params_test5' in globals():
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('step5: tune reg_alpha...')
+        dfscore_best = tune.gridsearch_cv(params_test5,cv = 5,verbose_eval = 20)
    
     
     # step6: 
-    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s\n'%nowtime)
-    print('step6: tune reg_lambda...')
-    tune.gridsearch_cv(params_test6,cv = 5,verbose_eval = 20)
+    if 'params_test6' in globals():
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('step6: tune reg_lambda...')
+        dfscore_best = tune.gridsearch_cv(params_test6,cv = 5,verbose_eval = 20)
     
     
     # step7: 
-    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s\n'%nowtime)
-    print('step7: try relatively low learning_rate...')
-    tune.gridsearch_cv(params_test7,cv = 5,verbose_eval = 20)
+    if 'params_test7' in globals():
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('step7: try relatively low learning_rate...')
+        dfscore_best = tune.gridsearch_cv(params_test7,cv = 5,verbose_eval = 20)
     
     # step8: 
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -2295,7 +2257,7 @@ def main(dftrain,dftest,outputdir = outputdir,n_jobs = n_jobs,
     print('step8: train model with tuned parameters and fully train dataset...')
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('\n================================================================================ %s\n'%nowtime)
-    bst,dfimportance = tune.train_best()
+    bst,dfimportance = tune.train_best(verbose_eval = True)
    
     #generate results
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')

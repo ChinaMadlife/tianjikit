@@ -216,16 +216,7 @@ class Tunning(object):
             print('removed feature columns not numerical: %s'%(','.join(map(str,object_cols))),file = sys.stderr)
             dftrain = dftrain.drop(object_cols,axis = 1)
             if len(dftest):dftest = dftest.drop(object_cols,axis = 1)
-        
-        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        print('\n================================================================================ %s\n'%nowtime)
-        print('train set size: %d'%len(dftrain))
-        print('test set size: %d'%len(dftest))
-        print('feature number: %s'%str(dftrain.shape[1]))
-        print('score func: %s'%score_func)
-        print('score gap limit: %s'%str(score_gap_limit))
-        print('n_jobs: %d'%n_jobs)
-        
+         
         # 分割feature和label
         X_train = dftrain.drop(['label'],axis = 1)
         y_train = dftrain['label']
@@ -254,6 +245,16 @@ class Tunning(object):
         
         self.score_func = score_func
         self.score_gap_limit = score_gap_limit
+        
+        
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('train set size: %d'%len(dftrain))
+        print('test set size: %d'%len(dftest))
+        print('feature number: %s'%str(X_train.shape[1]))
+        print('score func: %s'%score_func)
+        print('score gap limit: %s'%str(score_gap_limit))
+        print('n_jobs: %d'%n_jobs)
         
     def model_cv(self,params_dict,cv = 5,verbose_eval = 10):
         
@@ -314,6 +315,8 @@ class Tunning(object):
             self.dfparams.loc[m,:] = dic_merge
             
         df_filter = self.dfscores.query('score_gap < {}'.format(self.score_gap_limit))
+        if len(df_filter) <1: 
+            df_filter = self.dfscores.iloc[[np.argmin(self.dfscores['score_gap'].values)],:]
         dfscore_best = df_filter.iloc[[np.argmax(df_filter['validate_score'].values)],:]
         dfparams_best = self.dfparams.query('model_id == {}'.format(dfscore_best['model_id'].values[0]))
         
@@ -343,6 +346,8 @@ class Tunning(object):
         
         # 寻找历史参数序列中最优参数
         df_filter = self.dfscores.query('score_gap < {}'.format(self.score_gap_limit))
+        if len(df_filter) < 1: 
+            df_filter = self.dfscores.iloc[[np.argmin(self.dfscores['score_gap'].values)],:]
         dfscore_best = df_filter.iloc[[np.argmax(df_filter['validate_score'].values)],:]
         dfparams_best = self.dfparams.query('model_id == {}'.format(dfscore_best['model_id'].values[0]))
         

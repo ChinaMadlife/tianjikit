@@ -1,0 +1,2 @@
+	model_id	train_score	validate_score	score_gap	test_score	learning_rate	n_estimators	max_depth	min_child_weight	gamma	subsample	colsample_bytree	reg_alpha	reg_lambda
+0	0	0.8801904	0.8811274000000001	-0.0009369999999999879	0.8043956	0.1	4	3	30	0	0.8	1.0	0	1

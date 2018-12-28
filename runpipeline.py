@@ -146,52 +146,59 @@ def main(dftrain,dftest,outputdir = outputdir,n_jobs = n_jobs,
     tune = Tunning(dftrain,dftest,score_func = score_func,score_gap_limit = score_gap_limit, 
                    params_dict=params_dict,n_jobs=n_jobs)
     
-    # step1: 
-    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s\n'%nowtime)
-    print('step1: tune n_estimators for relatively high learning_rate...')
-    tune.gridsearch_cv(params_test1,cv = 5,verbose_eval = 20)
+     # step1: 
+    if 'params_test1' in globals():
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('step1: try relatively high learning_rate...')
+        dfscore_best = tune.gridsearch_cv(params_test1,cv = 5,verbose_eval = 20)
     
     # step2：
-    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s\n'%nowtime)
-    print('step2: tune max_depth & min_child_weight...')
-    tune.gridsearch_cv(params_test2,cv = 5,verbose_eval = 20)
+    if 'params_test2' in globals():
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('step2: tune max_depth & min_child_weight...')
+        dfscore_best = tune.gridsearch_cv(params_test2,cv = 5,verbose_eval = 20)
     
     
     # step3：
-    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s\n'%nowtime)
-    print('step3: tune gamma...')
-    tune.gridsearch_cv(params_test3,cv = 5,verbose_eval = 20)
+    if 'params_test3' in globals():
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('step3: tune gamma...')
+        dfscore_best = tune.gridsearch_cv(params_test3,cv = 5,verbose_eval = 20)
     
     
     # step4：
-    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s\n'%nowtime)
-    print('step4: tune subsample & colsample_bytree...')
-    tune.gridsearch_cv(params_test4,cv = 5,verbose_eval = 20)
-    
+    if 'params_test4' in globals():
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('step4: tune subsample & colsample_bytree...')
+        dfscore_best = tune.gridsearch_cv(params_test4,cv = 5,verbose_eval = 20)
+
     
     # step5: 
-    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s\n'%nowtime)
-    print('step5: tune reg_alpha...')
-    tune.gridsearch_cv(params_test5,cv = 5,verbose_eval = 20)
+    if 'params_test5' in globals():
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('step5: tune reg_alpha...')
+        dfscore_best = tune.gridsearch_cv(params_test5,cv = 5,verbose_eval = 20)
    
     
     # step6: 
-    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s\n'%nowtime)
-    print('step6: tune reg_lambda...')
-    tune.gridsearch_cv(params_test6,cv = 5,verbose_eval = 20)
+    if 'params_test6' in globals():
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('step6: tune reg_lambda...')
+        dfscore_best = tune.gridsearch_cv(params_test6,cv = 5,verbose_eval = 20)
     
     
     # step7: 
-    nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print('\n================================================================================ %s\n'%nowtime)
-    print('step7: lower learning_rate...')
-    tune.gridsearch_cv(params_test7,cv = 5,verbose_eval = 20)
+    if 'params_test7' in globals():
+        nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        print('\n================================================================================ %s\n'%nowtime)
+        print('step7: try relatively low learning_rate...')
+        dfscore_best = tune.gridsearch_cv(params_test7,cv = 5,verbose_eval = 20)
     
     # step8: 
     nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
