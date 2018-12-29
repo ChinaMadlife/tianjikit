@@ -52,17 +52,17 @@ params_dict['seed'] = 0
 
 params_test1 = {'learning_rate': [0.1],'n_estimators':[50]}  #此处应配置较大 learning_rate
 
-#params_test2 = { 'max_depth': [3], 'min_child_weight': [50,100,200] } 
+params_test2 = { 'max_depth': [3], 'min_child_weight': [50,100,200] } 
 
-#params_test3 = {'gamma': [0.1,0.5,1]}
+params_test3 = {'gamma': [0.1,0.5,1]}
 
-#params_test4 = { 'subsample': [0.9,1.0],'colsample_bytree': [1.0] } 
+params_test4 = { 'subsample': [0.9,1.0],'colsample_bytree': [1.0] } 
 
-#params_test5 = { 'reg_alpha': [0.1,1] } 
+params_test5 = { 'reg_alpha': [0.1,1] } 
 
-#params_test6 = { 'reg_lambda': [0,0.1] }
+params_test6 = { 'reg_lambda': [0,0.1] }
 
-#params_test7 = {'learning_rate':[0.09,0.08],'n_estimators':[100]} #此处应配置较小learning_rate
+params_test7 = {'learning_rate':[0.09,0.08],'n_estimators':[100]} #此处应配置较小learning_rate
 #===============================================================================
 
 
@@ -2041,9 +2041,9 @@ class Tunning(object):
         
         nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print('\n================================================================================ %s\n'%nowtime)
-        print('train set size: %d'%len(Xtrain))
-        print('test set size: %d'%len(Xtest))
-        print('feature number: %s'%str(Xtrain.shape[1]))
+        print('train set size: %d'%len(X_train))
+        print('test set size: %d'%len(X_test))
+        print('feature number: %s'%str(X_train.shape[1]))
         print('score func: %s'%score_func)
         print('score gap limit: %s'%str(score_gap_limit))
         print('n_jobs: %d'%n_jobs)

@@ -249,8 +249,8 @@ class Tunning(object):
         
         nowtime = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         print('\n================================================================================ %s\n'%nowtime)
-        print('train set size: %d'%len(dftrain))
-        print('test set size: %d'%len(dftest))
+        print('train set size: %d'%len(X_train))
+        print('test set size: %d'%len(X_test))
         print('feature number: %s'%str(X_train.shape[1]))
         print('score func: %s'%score_func)
         print('score gap limit: %s'%str(score_gap_limit))
