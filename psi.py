@@ -13,7 +13,9 @@ import pandas as pd
 
 def __get_hist(data,cut_points):
     # 给定数据和分隔点计算数据的区间分布频率
-    if len(cut_points) == 2:
+    if len(cut_points) == 1:
+        frequencies = [1.0]
+    elif len(cut_points) == 2:
         frequencies = [sum([1.0 for x in data if x < sum(cut_points)/2.0 ])/len(data),
                        sum([1.0 for x in data if x >= sum(cut_points)/2.0 ])/len(data)]
     elif len(cut_points) == 3:
